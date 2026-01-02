@@ -17,16 +17,37 @@ import (
 
 // KnowledgeHandler processes HTTP requests related to knowledge resources
 type KnowledgeHandler struct {
-	kgService interfaces.KnowledgeService
-	kbService interfaces.KnowledgeBaseService
+	kgService   interfaces.KnowledgeService
+	kbService   interfaces.KnowledgeBaseService
+	userService interfaces.UserService
 }
 
 // NewKnowledgeHandler creates a new knowledge handler instance
 func NewKnowledgeHandler(
 	kgService interfaces.KnowledgeService,
 	kbService interfaces.KnowledgeBaseService,
+	userService interfaces.UserService,
 ) *KnowledgeHandler {
-	return &KnowledgeHandler{kgService: kgService, kbService: kbService}
+	return &KnowledgeHandler{
+		kgService:   kgService,
+		kbService:   kbService,
+		userService: userService,
+	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (h *KnowledgeHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // validateKnowledgeBaseAccess validates access permissions to a knowledge base
@@ -101,6 +122,12 @@ func (h *KnowledgeHandler) handleDuplicateKnowledgeError(c *gin.Context,
 // @Router       /knowledge-bases/{id}/knowledge/file [post]
 func (h *KnowledgeHandler) CreateKnowledgeFromFile(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start creating knowledge from file")
 
 	// Validate access to the knowledge base
@@ -199,6 +226,12 @@ func (h *KnowledgeHandler) CreateKnowledgeFromFile(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/knowledge/url [post]
 func (h *KnowledgeHandler) CreateKnowledgeFromURL(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start creating knowledge from URL")
 
 	// Validate access to the knowledge base
@@ -267,6 +300,12 @@ func (h *KnowledgeHandler) CreateKnowledgeFromURL(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/knowledge/manual [post]
 func (h *KnowledgeHandler) CreateManualKnowledge(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start creating manual knowledge")
 
 	_, kbID, err := h.validateKnowledgeBaseAccess(c)
@@ -440,6 +479,11 @@ func (h *KnowledgeHandler) ListKnowledge(c *gin.Context) {
 func (h *KnowledgeHandler) DeleteKnowledge(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start deleting knowledge")
 
 	// Get knowledge ID from URL path parameter
@@ -606,6 +650,12 @@ func (h *KnowledgeHandler) GetKnowledgeBatch(c *gin.Context) {
 // @Router       /knowledge/{id} [put]
 func (h *KnowledgeHandler) UpdateKnowledge(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	// Get knowledge ID from URL path parameter
 	id := secutils.SanitizeForLog(c.Param("id"))
 	if id == "" {
@@ -649,6 +699,12 @@ func (h *KnowledgeHandler) UpdateKnowledge(c *gin.Context) {
 // @Router       /knowledge/manual/{id} [put]
 func (h *KnowledgeHandler) UpdateManualKnowledge(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start updating manual knowledge")
 
 	id := secutils.SanitizeForLog(c.Param("id"))
@@ -703,6 +759,12 @@ type knowledgeTagBatchRequest struct {
 // @Router       /knowledge/tags [put]
 func (h *KnowledgeHandler) UpdateKnowledgeTagBatch(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	var req knowledgeTagBatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to parse knowledge tag batch request", err)

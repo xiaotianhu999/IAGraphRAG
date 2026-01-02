@@ -1,16 +1,69 @@
 export default {
   menu: {
+    dashboard: "仪表盘",
     knowledgeBase: "知识库",
     chat: "对话",
     createChat: "创建对话",
     tenant: "账户信息",
     settings: "系统设置",
+    tenantManagement: "租户管理",
+    userManagement: "用户管理",
+    auditLog: "审计日志",
     logout: "退出登录",
     uploadKnowledge: "上传知识",
     deleteRecord: "删除记录",
     newSession: "新会话",
     confirmLogout: "确定要退出登录吗？",
     systemInfo: "系统信息",
+  },
+  dashboard: {
+    title: "系统仪表盘",
+    stats: {
+      tenants: "总租户数",
+      users: "总用户数",
+      knowledge_bases: "知识库总数",
+      documents: "文档总数"
+    },
+    storage: {
+      title: "存储空间使用情况",
+      desc: "包含向量数据库、原始文件、解析文本等占用的总空间"
+    },
+    recent_activities: "最近活动",
+  },
+  init: {
+    title: "系统初始化向导",
+    subtitle: "欢迎使用爱联-律境（LegalScape），请完成以下步骤以开始使用",
+    steps: {
+      admin: "管理员账号",
+      tenant: "租户信息",
+      confirm: "确认信息"
+    },
+    form: {
+      username: "管理员用户名",
+      email: "管理员邮箱",
+      password: "管理员密码",
+      tenant_name: "初始租户名称"
+    },
+    placeholder: {
+      username: "请输入管理员用户名",
+      email: "请输入管理员邮箱",
+      password: "请输入管理员密码",
+      tenant_name: "请输入初始租户名称"
+    },
+    rules: {
+      username: "请输入用户名",
+      email: "请输入邮箱",
+      email_format: "请输入正确的邮箱格式",
+      password: "请输入密码",
+      password_len: "密码长度至少为8位",
+      tenant_name: "请输入租户名称"
+    },
+    confirm: {
+      title: "请确认初始化信息"
+    },
+    submit: "开始初始化",
+    success: "系统初始化成功！",
+    failed: "系统初始化失败"
   },
   knowledgeBase: {
     title: "知识库",
@@ -441,7 +494,7 @@ export default {
   },
   initialization: {
     title: "初始化",
-    welcome: "欢迎使用WeKnora",
+    welcome: "欢迎使用爱联-律境（LegalScape）",
     description: "请先配置系统以开始使用",
     step1: "步骤1：配置LLM模型",
     step2: "步骤2：配置嵌入模型",
@@ -659,7 +712,7 @@ export default {
     registerNow: "立即注册",
     registerSuccess: "注册成功！系统已为您创建专属租户，请登录",
     registerFailed: "注册失败",
-    subtitle: "基于大模型的文档理解和语义搜索框架",
+    subtitle: "欢迎使用爱联-律境（LegalScape）",
     registerSubtitle: "注册后系统将为您创建专属租户",
     emailPlaceholder: "输入邮箱地址",
     passwordPlaceholder: "输入密码（8-32个字符，包含字母和数字）",
@@ -999,6 +1052,10 @@ export default {
     description: "配置语言、外观等基础选项",
     settings: "设置",
     close: "关闭设置",
+    theme: "外观主题",
+    themeDescription: "选择系统界面的显示风格",
+    light: "浅色模式",
+    dark: "深色模式",
   },
   platform: {
     subtitle: "企业级智能文档检索框架",

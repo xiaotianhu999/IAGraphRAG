@@ -14,9 +14,10 @@ import (
 type AsynqTaskParams struct {
 	dig.In
 
-	Server           *asynq.Server
-	Extracter        interfaces.Extracter
-	KnowledgeService interfaces.KnowledgeService
+	Server              *asynq.Server
+	Extracter           interfaces.Extracter
+	KnowledgeService    interfaces.KnowledgeService
+	GraphRebuildService interfaces.GraphRebuildService
 }
 
 func getAsynqRedisClientOpt() *asynq.RedisClientOpt {
@@ -75,6 +76,9 @@ func RunAsynqServer(params AsynqTaskParams) *asynq.ServeMux {
 
 	// Register KB clone handler
 	mux.HandleFunc(types.TypeKBClone, params.KnowledgeService.ProcessKBClone)
+
+	// Register graph rebuild handler
+	mux.HandleFunc(types.TypeGraphRebuild, params.GraphRebuildService.Handle)
 
 	go func() {
 		// Start the server

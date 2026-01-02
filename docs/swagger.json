@@ -1,12 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "WeKnora 知识库管理系统 API 文档",
-        "title": "WeKnora API",
+        "description": "知识库管理系统 API 文档",
+        "title": "API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "WeKnora Github",
-            "url": "https://github.com/Tencent/WeKnora"
+            "name": "aiplusall",
+            "url": "https://www.aiplus.com.cn/"
         },
         "version": "1.0"
     },

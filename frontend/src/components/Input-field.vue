@@ -5,6 +5,7 @@ import { onBeforeRouteUpdate } from 'vue-router';
 import { MessagePlugin } from "tdesign-vue-next";
 import { useSettingsStore } from '@/stores/settings';
 import { useUIStore } from '@/stores/ui';
+import { useAuthStore } from '@/stores/auth';
 import { listKnowledgeBases, searchKnowledge, batchQueryKnowledge } from '@/api/knowledge-base';
 import { stopSession } from '@/api/chat';
 import KnowledgeBaseSelector from './KnowledgeBaseSelector.vue';
@@ -19,6 +20,7 @@ const route = useRoute();
 const router = useRouter();
 const settingsStore = useSettingsStore();
 const uiStore = useUIStore();
+const authStore = useAuthStore();
 let query = ref("");
 const showKbSelector = ref(false);
 const atButtonRef = ref<HTMLElement>();
@@ -1024,6 +1026,15 @@ const onKeydown = (val: string, event: { e: { preventDefault(): unknown; keyCode
 }
 
 const handleGoToWebSearchSettings = () => {
+  // 检查用户是否有settings权限
+  const userMenuConfig = authStore.user?.menu_config || []
+  const hasSettingsPermission = authStore.isAdmin || userMenuConfig.includes('settings')
+  
+  if (!hasSettingsPermission) {
+    MessagePlugin.warning('您没有访问设置的权限')
+    return
+  }
+  
   uiStore.openSettings('websearch');
   if (route.path !== '/platform/settings') {
     router.push('/platform/settings');
@@ -1031,6 +1042,15 @@ const handleGoToWebSearchSettings = () => {
 };
 
 const handleGoToAgentSettings = () => {
+  // 检查用户是否有settings权限
+  const userMenuConfig = authStore.user?.menu_config || []
+  const hasSettingsPermission = authStore.isAdmin || userMenuConfig.includes('settings')
+  
+  if (!hasSettingsPermission) {
+    MessagePlugin.warning('您没有访问设置的权限')
+    return
+  }
+  
   // 使用 uiStore 打开设置并跳转到 agent 部分
   uiStore.openSettings('agent');
   // 如果当前不在设置页面，导航到设置页面
@@ -1038,6 +1058,12 @@ const handleGoToAgentSettings = () => {
     router.push('/platform/settings');
   }
 }
+
+// 检查用户是否有设置权限
+const hasSettingsPermission = computed(() => {
+  const userMenuConfig = authStore.user?.menu_config || []
+  return authStore.isAdmin || userMenuConfig.includes('settings')
+})
 
 // 获取 Agent 不就绪的原因
 const getAgentNotReadyReasons = (): string[] => {
@@ -1334,7 +1360,7 @@ onBeforeRouteUpdate((to, from, next) => {
                   </t-tooltip>
                 </div>
               </div>
-              <div v-if="!settingsStore.isAgentReady && !isAgentEnabled" class="agent-mode-footer">
+              <div v-if="!settingsStore.isAgentReady && !isAgentEnabled && hasSettingsPermission" class="agent-mode-footer">
                 <a 
                   href="#"
                   @click.prevent="handleGoToAgentSettings"

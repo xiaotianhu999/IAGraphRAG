@@ -54,6 +54,13 @@ func NewTenantHandler(service interfaces.TenantService, userService interfaces.U
 func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	// Check if user has permission
+	currentUser, err := h.userService.GetCurrentUser(ctx)
+	if err != nil || !currentUser.CanAccessAllTenants {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return
+	}
+
 	logger.Info(ctx, "Start creating tenant")
 
 	var tenantData types.Tenant
@@ -114,6 +121,18 @@ func (h *TenantHandler) GetTenant(c *gin.Context) {
 		return
 	}
 
+	// Check if user has permission
+	currentUser, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return
+	}
+
+	if !currentUser.CanAccessAllTenants && currentUser.TenantID != id {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return
+	}
+
 	tenant, err := h.service.GetTenantByID(ctx, id)
 	if err != nil {
 		// Check if this is an application-specific error
@@ -155,6 +174,20 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 		logger.Errorf(ctx, "Invalid tenant ID: %s", secutils.SanitizeForLog(c.Param("id")))
 		c.Error(errors.NewBadRequestError("Invalid tenant ID"))
 		return
+	}
+
+	// Check if user has permission
+	currentUser, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return
+	}
+
+	if !currentUser.CanAccessAllTenants {
+		if currentUser.Role != types.RoleAdmin || currentUser.TenantID != id {
+			c.Error(errors.NewForbiddenError("Insufficient permissions"))
+			return
+		}
 	}
 
 	var tenantData types.Tenant
@@ -205,6 +238,13 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 // @Router       /tenants/{id} [delete]
 func (h *TenantHandler) DeleteTenant(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	currentUser, err := h.userService.GetCurrentUser(ctx)
+	if err != nil || !currentUser.CanAccessAllTenants {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return
+	}
 
 	logger.Info(ctx, "Start deleting tenant")
 
@@ -291,8 +331,14 @@ func (h *TenantHandler) ListAllTenants(c *gin.Context) {
 		return
 	}
 
-	// Check if cross-tenant access is enabled
-	if h.config == nil || h.config.Tenant == nil || !h.config.Tenant.EnableCrossTenantAccess {
+	// Check if cross-tenant access is enabled or user is super admin
+	enableCrossTenant := false
+	if h.config != nil && h.config.Tenant != nil {
+		enableCrossTenant = h.config.Tenant.EnableCrossTenantAccess
+	}
+	logger.Infof(ctx, "Checking cross-tenant access for user: %s, CanAccessAllTenants: %v, EnableCrossTenantAccess: %v",
+		user.ID, user.CanAccessAllTenants, enableCrossTenant)
+	if !user.CanAccessAllTenants && !enableCrossTenant {
 		logger.Warnf(ctx, "Cross-tenant access is disabled, user: %s", user.ID)
 		c.Error(errors.NewForbiddenError("Cross-tenant access is disabled"))
 		return
@@ -352,8 +398,14 @@ func (h *TenantHandler) SearchTenants(c *gin.Context) {
 		return
 	}
 
-	// Check if cross-tenant access is enabled
-	if h.config == nil || h.config.Tenant == nil || !h.config.Tenant.EnableCrossTenantAccess {
+	// Check if cross-tenant access is enabled or user is super admin
+	enableCrossTenant := false
+	if h.config != nil && h.config.Tenant != nil {
+		enableCrossTenant = h.config.Tenant.EnableCrossTenantAccess
+	}
+	logger.Infof(ctx, "Checking cross-tenant access for user: %s, CanAccessAllTenants: %v, EnableCrossTenantAccess: %v",
+		user.ID, user.CanAccessAllTenants, enableCrossTenant)
+	if !user.CanAccessAllTenants && !enableCrossTenant {
 		logger.Warnf(ctx, "Cross-tenant access is disabled, user: %s", user.ID)
 		c.Error(errors.NewForbiddenError("Cross-tenant access is disabled"))
 		return

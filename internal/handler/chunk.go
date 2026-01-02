@@ -14,12 +14,31 @@ import (
 
 // ChunkHandler defines HTTP handlers for chunk operations
 type ChunkHandler struct {
-	service interfaces.ChunkService
+	service     interfaces.ChunkService
+	userService interfaces.UserService
 }
 
 // NewChunkHandler creates a new chunk handler
-func NewChunkHandler(service interfaces.ChunkService) *ChunkHandler {
-	return &ChunkHandler{service: service}
+func NewChunkHandler(service interfaces.ChunkService, userService interfaces.UserService) *ChunkHandler {
+	return &ChunkHandler{
+		service:     service,
+		userService: userService,
+	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (h *ChunkHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // GetChunkByIDOnly godoc
@@ -242,6 +261,12 @@ func (h *ChunkHandler) validateAndGetChunk(c *gin.Context) (*types.Chunk, string
 // @Router       /chunks/{knowledge_id}/{id} [put]
 func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start updating knowledge chunk")
 
 	// Validate parameters and get chunk
@@ -294,6 +319,12 @@ func (h *ChunkHandler) UpdateChunk(c *gin.Context) {
 // @Router       /chunks/{knowledge_id}/{id} [delete]
 func (h *ChunkHandler) DeleteChunk(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start deleting knowledge chunk")
 
 	// Validate parameters and get chunk
@@ -329,6 +360,10 @@ func (h *ChunkHandler) DeleteChunk(c *gin.Context) {
 // @Router       /chunks/{knowledge_id} [delete]
 func (h *ChunkHandler) DeleteChunksByKnowledgeID(c *gin.Context) {
 	ctx := c.Request.Context()
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 	logger.Info(ctx, "Start deleting all chunks under knowledge")
 
 	knowledgeID := secutils.SanitizeForLog(c.Param("knowledge_id"))
@@ -368,6 +403,12 @@ func (h *ChunkHandler) DeleteChunksByKnowledgeID(c *gin.Context) {
 // @Router       /chunks/by-id/{id}/questions [delete]
 func (h *ChunkHandler) DeleteGeneratedQuestion(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start deleting generated question from chunk")
 
 	chunkID := secutils.SanitizeForLog(c.Param("id"))

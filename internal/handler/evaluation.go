@@ -14,11 +14,30 @@ import (
 // EvaluationHandler handles evaluation related HTTP requests
 type EvaluationHandler struct {
 	evaluationService interfaces.EvaluationService // Service for evaluation operations
+	userService       interfaces.UserService
 }
 
 // NewEvaluationHandler creates a new EvaluationHandler instance
-func NewEvaluationHandler(evaluationService interfaces.EvaluationService) *EvaluationHandler {
-	return &EvaluationHandler{evaluationService: evaluationService}
+func NewEvaluationHandler(evaluationService interfaces.EvaluationService, userService interfaces.UserService) *EvaluationHandler {
+	return &EvaluationHandler{
+		evaluationService: evaluationService,
+		userService:       userService,
+	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (e *EvaluationHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := e.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // EvaluationRequest contains parameters for evaluation request
@@ -43,6 +62,11 @@ type EvaluationRequest struct {
 // @Router       /evaluation/ [post]
 func (e *EvaluationHandler) Evaluation(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !e.checkAdmin(c) {
+		return
+	}
 
 	logger.Info(ctx, "Start processing evaluation request")
 

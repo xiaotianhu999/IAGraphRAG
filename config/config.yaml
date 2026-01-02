@@ -32,7 +32,7 @@ conversation:
 
     ## 改写目标
     请根据历史对话，对当前用户问题进行改写，目标是：
-    - 进行指代消解，将"它"、"这个"、"那个"、"他"、"她"、"它们"、"他们"、"她们"等代词替换为明确的主语
+    - 进行指代消解，将"它"、"这个"、"那个"、"他"、"她"、"它们"、"他们"、"她们"、"被告人"、"其"、"该单位"等代词替换为明确的主语
     - 补全省略的关键信息，确保问题语义完整
     - 保持问题的原始含义和表达方式不变
     - 改写后必须也是一个问题
@@ -180,7 +180,7 @@ conversation:
       </think>
       NO_MATCH
     prompt: |
-      你是一个专业的智能信息检索助手，名为WeKnora。你犹如专业的高级秘书，依据检索到的信息回答用户问题，不能利用任何先验知识。
+      你是一个专业的智能信息检索助手，名为律境。你犹如专业的高级秘书，依据检索到的信息回答用户问题，不能利用任何先验知识。
       当用户提出问题时，助手会基于特定的信息进行解答。助手首先在心中思考推理过程，然后向用户提供答案。
     context_template: |
       ## 回答问题规则
@@ -208,11 +208,98 @@ conversation:
       ## 用户当前的问题是：
       {{.Query}}
   extract_entities_prompt: |
-    ## 任务
-    用户提供的文本中，提取所有符合以下实体类型的实体：
-    EntityTypes: [Person, Organization, Location, Product, Event, Date, Work, Concept, Resource, Category, Operation]
+    ## 角色
+    你是一位顶级的中国法律领域知识图谱构建专家。你精通中国法律体系的完整架构，包括法律法规、司法解释和司法实践，擅长从法律文书、法规文件和司法解释中精准抽取实体，并构建统一的知识图谱。
 
-    ## 要求
+    ## 任务目标
+    请阅读给定的【法律文本】，严格按照预定义的统一Schema（实体类型和关系类型），抽取其中存在的所有实体。本任务的核心目标是构建"统一知识图谱"，需要特别关注：
+    1. **识别文档类型**：首先判断文本属于判决书、法律法规、司法解释、指导性案例还是参考案例
+    2. **提取文档元数据**：如案号、案例编号、发文机关、生效时间等
+    3. **标准化实体命名**：确保同一实体在不同文档中使用统一名称
+    4. **建立跨文档联系**：识别文本中引用的其他法律文件、判例或指导性案例
+
+    ## Schema Definition
+    ### EntityTypes（实体类型 - 统一知识图谱版）
+    
+    #### 一、文档类型实体（Document Types）- 完整版12大文档源
+    
+    ##### A. 核心司法文书类
+    - LEGAL_DOCUMENT: 法律文书（判决书、裁定书、调解书等司法文书的统称）
+    - JUDGMENT: 判决书（如(2023)京01刑初123号刑事判决书）
+    - RULING: 裁定书（如财产保全裁定书）
+    - MEDIATION: 调解书
+    - GUIDING_CASE: 指导性案例（如最高人民法院发布的指导案例123号，具有指导意义和准约束力）
+    - REFERENCE_CASE: 参考案例（如最高人民法院公报案例、典型案例，具有参考价值但无约束力）
+    
+    ##### B. 法律规范类
+    - LAW: 法律法规（如《中华人民共和国刑法》，由全国人大及其常委会制定）
+    - REGULATION: 行政法规/部门规章（如《道路交通安全法实施条例》，由国务院及部委制定）
+    - LOCAL_REGULATION: 地方性法规（如《北京市物业管理条例》，由省级及设区的市人大制定）
+    - INTERNATIONAL_TREATY: 国际条约（如《联合国反腐败公约》，中国签署、批准或加入的国际条约）
+    
+    ##### C. 法律解释类（P0优先级）
+    - LEGISLATIVE_INTERPRETATION: 立法解释（如《全国人大常委会关于〈刑法〉第九十三条第二款的解释》，效力等同法律）
+    - JUDICIAL_INTERPRETATION: 司法解释（如《最高人民法院关于适用〈中华人民共和国刑法〉的解释》）
+    - JUDICIAL_REPLY: 法律批复/答复（如《最高法关于XXX问题的批复》、《最高检关于XXX问题的答复》）
+    - JUDICIAL_MEETING_MINUTES: 会议纪要（如《全国法院民商事审判工作会议纪要》九民纪要，对审判实践有重要指导）
+    
+    ##### D. 争议解决类
+    - ARBITRATION_AWARD: 仲裁裁决书（如中国国际经济贸易仲裁委员会裁决书，与判决书同等效力）
+    - LABOR_ARBITRATION_AWARD: 劳动仲裁裁决书（由劳动人事争议仲裁委员会作出，劳动争议前置程序）
+    
+    ##### E. 行政执法类
+    - ADMINISTRATIVE_PENALTY: 行政处罚决定书（如市场监管局处罚决定，对被处罚人有约束力）
+    - ADMINISTRATIVE_RECONSIDERATION: 行政复议决定书（对原行政行为有维持、撤销、变更等效力）
+    
+    ##### F. 检察监督类
+    - PROCURATORIAL_SUGGESTION: 检察建议书（人民检察院的法律监督手段）
+    - PROTEST: 抗诉书（人民检察院启动审判监督程序）
+    
+    ##### G. 辅助文档类
+    - NORMATIVE_DOCUMENT: 规范性文件（如通知、意见、批复等）
+    - JUDICIAL_APPRAISAL: 司法鉴定意见书（作为证据使用）
+    - NOTARIAL_DOCUMENT: 公证文书（具有法定证明力）
+    
+    #### 二、法规结构实体（Legal Structure）
+    - ARTICLE: 法条/条文（如第一百三十三条）
+    - CLAUSE: 款项（如第一款）
+    - ITEM: 项目（如第（一）项）
+    - CHAPTER: 章节（如第三章）
+    
+    #### 三、案件与文档标识实体（Case & Document Identifiers）
+    - CASE_NUMBER: 案号（如(2023)京01刑初123号）
+    - GUIDING_CASE_NUMBER: 指导性案例编号（如指导案例123号）
+    - REFERENCE_CASE_NUMBER: 参考案例编号（如公报案例编号）
+    - ARBITRATION_CASE_NUMBER: 仲裁案号（如(2023)中国贸仲京字第1234号）
+    - ADMINISTRATIVE_PENALTY_NUMBER: 行政处罚决定书文号（如京市监处罚〔2023〕123号）
+    - LEGISLATIVE_INTERPRETATION_NUMBER: 立法解释编号
+    - TREATY_NUMBER: 条约编号或名称
+    - PERSON: 自然人/当事人（如张三、李某，需区分角色）
+    - ORG: 机构组织（如北京市第一中级人民法院、某某公司）
+    - COURT: 审判机关（法院的专门分类）
+    - PROCURATORATE: 检察机关
+    - LAWYER: 律师/辩护人
+    - JUDGE: 审判人员
+    
+    #### 四、法律要素实体（Legal Elements）
+    - CRIME: 罪名（如交通肇事罪）
+    - CAUSE_OF_ACTION: 案由（如借款合同纠纷）
+    - PUNISHMENT: 刑罚（如有期徒刑三年，缓刑四年）
+    - LIABILITY: 民事责任（如赔偿损失）
+    - LEGAL_CONCEPT: 法律概念（如自首、累犯、正当防卫）
+    - LEGAL_PRINCIPLE: 法律原则（如罪刑法定原则）
+    - EVIDENCE: 证据（如行车记录仪视频）
+    - EVIDENCE_TYPE: 证据种类（如书证、物证、证人证言）
+    
+    #### 五、元数据实体（Metadata）
+    - TIME: 时间（如案发时间、审理时间、生效时间）
+    - LOCATION: 地点（如案发地点、管辖地）
+    - ASSET: 涉案金额/物品
+    - ISSUING_AUTHORITY: 发文机关（如最高人民法院）
+    - EFFECT_LEVEL: 效力层级（如宪法、法律、行政法规）
+    - VALIDITY_STATUS: 时效状态（如现行有效、已废止、已修订）
+
+    ## 要求（统一知识图谱核心原则）
     1. 提取结果必须以JSON数组格式输出
     2. 每个实体必须包含 title 和 type 字段，description 字段可选但强烈建议提供
     3. 确保 type 字段的值必须严格从 EntityTypes 列表中选择，不得创建新类型
@@ -221,19 +308,22 @@ conversation:
     6. 所有字段值不能包含HTML标签或其他代码
     7. 如果实体有歧义，需在description中说明具体指代
     8. 若没有找到任何实体，返回空数组 []
-
-    ## 实体提取规则
-    - Person: 真实或虚构的人物，包括历史人物、现代人物、文学角色等
-    - Organization: 公司、政府机构、团队、学校等组织实体
-    - Location: 地理位置、地标、国家、城市等
-    - Product: 商品、服务、品牌等商业产品
-    - Event: 事件、会议、节日、历史事件等
-    - Date: 日期、时间段、年代等时间相关信息
-    - Work: 书籍、电影、音乐、艺术作品等创作内容
-    - Concept: 抽象概念、思想、理论等
-    - Resource: 自然资源、信息资源、工具等
-    - Category: 分类、类别、领域等
-    - Operation: 操作、动作、方法、过程等
+    9. 忠于原文：实体必须是文本中的子串，不要进行概括或修改（除非是原文中的代词指代消解）
+    10. 完整性：不要遗漏文本中出现的任何核心实体（如具体的法条号、刑罚期限）
+    11. 排除性：忽略无关的客套话（如"综上所述"、"本院认为"等非实体内容）
+    12. 嵌套处理：如果一个实体是另一个实体的组成部分（如"故意杀人罪"包含"杀人"），优先抽取最完整的法律专有名词
+    13. 多义词处理：如果一个词语在法律领域有多重含义，需根据上下文确定具体指代，并在description中说明
+    
+    ### 统一知识图谱特殊要求：
+    14. **文档类型优先**：首先提取文档本身作为实体（如判决书、法律、司法解释），包含案号、文号等唯一标识
+    15. **标准化命名**：
+        - 法律名称必须包含书名号，如《中华人民共和国刑法》
+        - 法条必须关联所属法律，如"《刑法》第一百三十三条"
+        - 案号必须完整，如"(2023)京01刑初123号"
+    16. **元数据提取**：提取发文机关、生效时间、效力层级、时效状态等元数据实体
+    17. **引用识别**：识别文本中引用的其他法律文件，即使未完整出现也要提取
+    18. **角色区分**：对PERSON实体，在description中明确其角色（被告人、原告、证人等）
+    19. **层级结构**：提取法律的章、节、条、款、项等层级结构实体
 
     ## 提取步骤
     1. 仔细阅读文本，识别可能的实体
@@ -246,79 +336,191 @@ conversation:
     5. 将所有实体对象合并为一个JSON数组
     6. 检查最终JSON是否有效并符合要求
 
-    ## 示例
+    ## 示例（统一知识图谱场景）
+    
+    ### 示例1：判决书实体提取
     [输入]
-    文本： 《红楼梦》，又名《石头记》，是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书。该书前80回由曹雪芹所著，后40回一般认为是高鹗所续。小说以贾、史、王、薛四大家族的兴衰为背景，以贾宝玉、林黛玉和薛宝钗的爱情悲剧为主线，刻画了以贾宝玉和金陵十二钗为中心的正邪两赋、贤愚并出的高度复杂的人物群像。成书于乾隆年间（1743年前后），是中国文学史上现实主义的高峰，对后世影响深远。
+    文本： 北京市第一中级人民法院刑事判决书 (2023)京01刑初123号。公诉机关北京市人民检察院第一分院。被告人张三，男，1985年5月1日出生。辩护人李律师，北京某某律师事务所律师。被告人张三于2023年5月1日酒后驾驶机动车，在朝阳区撞伤行人李四。经鉴定，张三血液酒精含量为180mg/100ml。本院依据《中华人民共和国刑法》第一百三十三条之一及《最高人民法院关于审理道路交通事故刑事案件具体应用法律若干问题的解释》第二条，判决被告人张三犯危险驾驶罪，判处拘役两个月，并处罚金人民币五千元。
 
     [输出]
     [
-      {
-        "title": "红楼梦",
-        "type": "Work",
-        "description": "红楼梦是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书"
-      },
-      {
-        "title": "石头记",
-        "type": "Work",
-        "description": "石头记是红楼梦的别名"
-      },
-      {
-        "title": "曹雪芹",
-        "type": "Person",
-        "description": "曹雪芹是清代作家，红楼梦的作者，创作了前80回"
-      },
-      {
-        "title": "高鹗",
-        "type": "Person",
-        "description": "高鹗是红楼梦后40回的续作者"
-      },
-      {
-        "title": "贾宝玉",
-        "type": "Person",
-        "description": "贾宝玉是红楼梦中的主要角色，爱情悲剧的主角之一"
-      },
-      {
-        "title": "林黛玉",
-        "type": "Person",
-        "description": "林黛玉是红楼梦中的主要角色，爱情悲剧的主角之一"
-      },
-      {
-        "title": "薛宝钗",
-        "type": "Person",
-        "description": "薛宝钗是红楼梦中的主要角色，爱情悲剧的主角之一"
-      },
-      {
-        "title": "金陵十二钗",
-        "type": "Concept",
-        "description": "金陵十二钗是红楼梦中以贾宝玉为中心的十二位主要女性角色"
-      },
-      {
-        "title": "乾隆年间",
-        "type": "Date",
-        "description": "乾隆年间指的是红楼梦成书的时间，约1743年前后"
-      },
-      {
-        "title": "四大家族",
-        "type": "Concept",
-        "description": "四大家族是红楼梦中的贾、史、王、薛四个家族，是小说的背景"
-      },
-      {
-        "title": "中国文学史",
-        "type": "Category",
-        "description": "红楼梦被视为中国文学史中现实主义的高峰之作"
-      }
+      {"title": "(2023)京01刑初123号", "type": "CASE_NUMBER", "description": "北京市第一中级人民法院刑事判决书案号"},
+      {"title": "北京市第一中级人民法院", "type": "COURT", "description": "审理本案的法院"},
+      {"title": "北京市人民检察院第一分院", "type": "PROCURATORATE", "description": "本案公诉机关"},
+      {"title": "张三", "type": "PERSON", "description": "被告人，男，1985年5月1日出生"},
+      {"title": "李律师", "type": "LAWYER", "description": "被告人张三的辩护人，北京某某律师事务所律师"},
+      {"title": "李四", "type": "PERSON", "description": "被害人，被撞伤的行人"},
+      {"title": "2023年5月1日", "type": "TIME", "description": "案发时间"},
+      {"title": "朝阳区", "type": "LOCATION", "description": "案发地点，北京市朝阳区"},
+      {"title": "《中华人民共和国刑法》", "type": "LAW", "description": "本案适用的法律"},
+      {"title": "第一百三十三条之一", "type": "ARTICLE", "description": "《刑法》第一百三十三条之一，危险驾驶罪的法条"},
+      {"title": "《最高人民法院关于审理道路交通事故刑事案件具体应用法律若干问题的解释》", "type": "JUDICIAL_INTERPRETATION", "description": "本案参照的司法解释"},
+      {"title": "第二条", "type": "ARTICLE", "description": "司法解释的具体条文"},
+      {"title": "危险驾驶罪", "type": "CRIME", "description": "被告人张三被判定的罪名"},
+      {"title": "拘役两个月", "type": "PUNISHMENT", "description": "主刑，拘役两个月"},
+      {"title": "罚金人民币五千元", "type": "PUNISHMENT", "description": "附加刑，罚金五千元"},
+      {"title": "行车记录仪视频", "type": "EVIDENCE", "description": "证明案件事实的证据"}
+    ]
+
+    ### 示例2：法律法规实体提取
+    [输入]
+    文本： 《中华人民共和国刑法》由全国人民代表大会于1979年7月1日通过，1997年3月14日修订。第一百三十三条规定：违反交通运输管理法规，因而发生重大事故，致人重伤、死亡或者使公私财产遭受重大损失的，处三年以下有期徒刑或者拘役。第一百三十三条之一规定：在道路上驾驶机动车，有下列情形之一的，处拘役，并处罚金：（一）追逐竞驶，情节恶劣的；（二）醉酒驾驶机动车的。
+
+    [输出]
+    [
+      {"title": "《中华人民共和国刑法》", "type": "LAW", "description": "由全国人民代表大会制定的刑事基本法律，1979年通过，1997年修订"},
+      {"title": "全国人民代表大会", "type": "ISSUING_AUTHORITY", "description": "《刑法》的制定机关"},
+      {"title": "1979年7月1日", "type": "TIME", "description": "《刑法》初次通过时间"},
+      {"title": "1997年3月14日", "type": "TIME", "description": "《刑法》修订时间"},
+      {"title": "第一百三十三条", "type": "ARTICLE", "description": "《刑法》第一百三十三条，交通肇事罪"},
+      {"title": "第一百三十三条之一", "type": "ARTICLE", "description": "《刑法》第一百三十三条之一，危险驾驶罪"},
+      {"title": "交通肇事罪", "type": "CRIME", "description": "违反交通运输管理法规导致重大事故的犯罪"},
+      {"title": "危险驾驶罪", "type": "CRIME", "description": "在道路上醉驾或追逐竞驶的犯罪"},
+      {"title": "三年以下有期徒刑或者拘役", "type": "PUNISHMENT", "description": "交通肇事罪的法定刑"},
+      {"title": "拘役，并处罚金", "type": "PUNISHMENT", "description": "危险驾驶罪的法定刑"}
+    ]
+
+    ### 原有示例（保留用于一般场景）
+    [输入]
+    文本： 被告人张三于2023年5月1日酒后驾驶机动车，在朝阳区撞伤行人李四。经鉴定，张三血液酒精含量为180mg/100ml。法院依据《刑法》第一百三十三条之一，判决张三犯危险驾驶罪，判处拘役两个月，并处罚金人民币五千元。
+
+    [输出]
+    [
+      {"title": "张三", "type": "PERSON","description": "被告人，酒后驾驶肇事者"},    
+      {"title": "2023年5月1日", "type": "TIME","description": "案发时间"},    
+      {"title": "朝阳区", "type": "LOCATION","description": "案发地点，北京市朝阳区"},    
+      {"title": "李四", "type": "PERSON","description": "被害人，被撞伤的行人"},    
+      {"title": "《刑法》", "type": "LAW","description": "《中华人民共和国刑法》"},    
+      {"title": "第一百三十三条之一", "type": "ARTICLE","description": "《刑法》第一百三十三条之一，危险驾驶罪条款"},    
+      {"title": "危险驾驶罪", "type": "CRIME","description": "醉酒驾驶机动车的犯罪"},    
+      {"title": "拘役两个月", "type": "PUNISHMENT","description": "主刑，拘役两个月"},    
+      {"title": "罚金人民币五千元", "type": "PUNISHMENT","description": "附加刑，罚金五千元"}  
     ]
 
   extract_relationships_prompt: |
-    ## 任务
-    从用户提供的实体数组中，提取实体之间存在的明确关系，形成结构化的关系网络。
+    ## 角色
+    你是一位顶级的中国法律领域知识图谱构建专家。你精通中国法律体系的完整架构，包括法律法规、司法解释和司法实践，擅长从多源法律文档中精准抽取实体关系，构建统一的法律知识图谱。
 
-    ## 要求
+    ## 任务目标
+    从用户提供的实体数组和法律文本中，严格按照预定义的统一Schema（关系类型）提取实体之间存在的明确关系，形成跨文档源的结构化关系网络。
+    
+    ### 统一知识图谱的核心目标：
+    1. **连接不同文档源**：建立判决书、法律法规、司法解释之间的引用和适用关系
+    2. **构建法律推理链**：从案件事实 → 证据 → 法条 → 罪名/案由 → 判决结果
+    3. **追溯法律依据**：从判决追溯到法条，从法条追溯到上位法或司法解释
+    4. **识别层级关系**：法律体系的效力层级、法条的从属关系
+
+    ## Schema Definition
+    ### 关系类型（统一知识图谱 - 跨文档源关系体系）
+    
+    #### 一、法规体系内关系（Intra-Legal System）
+    - belongs_to: [ARTICLE/CLAUSE/ITEM] -> [LAW/REGULATION] (法条/款项属于哪部法律法规)
+    - part_of: [CHAPTER/ARTICLE] -> [LAW] (章节是法律的组成部分)
+    - amends: [LAW/REGULATION] -> [LAW/REGULATION] (修订关系，如新法修订旧法)
+    - repeals: [LAW/REGULATION] -> [LAW/REGULATION] (废止关系)
+    - supersedes: [LAW/REGULATION] -> [LAW/REGULATION] (替代关系)
+    - based_on: [REGULATION] -> [LAW] (行政法规基于上位法)
+    
+    #### 二、司法解释与法规关系（Interpretation-Law Relations）
+    - interprets: [JUDICIAL_INTERPRETATION] -> [LAW/ARTICLE] (司法解释解释法律条文)
+    - clarifies: [JUDICIAL_INTERPRETATION] -> [LEGAL_CONCEPT] (司法解释澄清法律概念)
+    - specifies: [JUDICIAL_INTERPRETATION] -> [ARTICLE] (司法解释细化法条适用)
+    
+    #### 三、判决书与法规关系（Judgment-Law Relations）
+    - cites: [JUDGMENT/RULING/GUIDING_CASE/REFERENCE_CASE] -> [LAW/ARTICLE] (判决书/案例引用法律条文)
+    - applies: [JUDGMENT/GUIDING_CASE] -> [ARTICLE] (判决书/指导性案例适用法条，表示具体应用)
+    - refers_to: [JUDGMENT/GUIDING_CASE] -> [JUDICIAL_INTERPRETATION] (判决书/案例参照司法解释)
+    - invokes: [JUDGMENT/GUIDING_CASE] -> [LEGAL_PRINCIPLE] (判决书/案例援引法律原则)
+    
+    #### 三-A、指导性案例与参考案例关系（Guiding/Reference Case Relations）
+    - guides: [GUIDING_CASE] -> [JUDGMENT] (指导性案例指导普通判决书，表示判决参照了指导性案例)
+    - references: [JUDGMENT/GUIDING_CASE] -> [REFERENCE_CASE] (判决书/指导性案例参考了参考案例)
+    - published_by: [GUIDING_CASE/REFERENCE_CASE] -> [ISSUING_AUTHORITY] (案例由最高法等机关发布)
+    - demonstrates: [GUIDING_CASE/REFERENCE_CASE] -> [LEGAL_CONCEPT] (案例示范了某个法律概念的适用)
+    - illustrates: [GUIDING_CASE/REFERENCE_CASE] -> [ARTICLE] (案例阐释了法条的具体适用方法)
+    
+    #### 四、判决书与案件实体关系（Judgment-Case Relations）
+    - accused_of: [PERSON] -> [CRIME] (被告人被指控的罪名)
+    - sued_for: [PERSON/ORG] -> [CAUSE_OF_ACTION] (原告起诉的案由)
+    - sentenced_to: [PERSON] -> [PUNISHMENT] (被告人被判处的刑罚)
+    - bear_liability: [PERSON/ORG] -> [LIABILITY] (承担的民事责任)
+    - represents: [LAWYER] -> [PERSON/ORG] (律师代理当事人)
+    - presides: [JUDGE] -> [CASE_NUMBER] (法官主审案件)
+    - prosecutes: [PROCURATORATE] -> [CASE_NUMBER] (检察机关公诉案件)
+    
+    #### 五、证据与事实关系（Evidence Relations）
+    - proves: [EVIDENCE] -> [CRIME/LEGAL_CONCEPT] (证据证明的事实或罪行)
+    - supports: [EVIDENCE] -> [JUDGMENT] (证据支持判决结论)
+    - contradicts: [EVIDENCE] -> [EVIDENCE] (证据之间的矛盾)
+    
+    #### 六、案件关联关系（Case Relations）
+    - similar_to: [JUDGMENT/GUIDING_CASE/REFERENCE_CASE/ARBITRATION_AWARD] -> [JUDGMENT/GUIDING_CASE/REFERENCE_CASE] (类似案例)
+    - cited_by: [JUDGMENT/GUIDING_CASE] -> [JUDGMENT] (判例/指导案例被其他判决引用)
+    - appeals_from: [JUDGMENT] -> [JUDGMENT] (上诉/发回重审关系)
+    - based_on_guiding_case: [JUDGMENT] -> [GUIDING_CASE] (判决基于指导性案例作出，强调指导性案例的指导作用)
+    
+    #### 七、概念关系（Concept Relations）
+    - defines: [LAW/JUDICIAL_INTERPRETATION/LEGISLATIVE_INTERPRETATION] -> [LEGAL_CONCEPT] (法律/解释定义概念)
+    - includes: [LEGAL_CONCEPT] -> [LEGAL_CONCEPT] (概念包含关系，如"犯罪"包含"故意犯罪")
+    - applies_concept: [JUDGMENT/PERSON] -> [LEGAL_CONCEPT] (案件/当事人涉及的法律概念)
+    
+    #### 八、组织与文档关系（Organization-Document Relations）
+    - issued_by: [LAW/REGULATION/LOCAL_REGULATION/JUDICIAL_INTERPRETATION/LEGISLATIVE_INTERPRETATION/JUDICIAL_REPLY/JUDICIAL_MEETING_MINUTES/GUIDING_CASE/REFERENCE_CASE/ADMINISTRATIVE_PENALTY/NORMATIVE_DOCUMENT] -> [ISSUING_AUTHORITY] (文件/案例由机关发布)
+    - adjudicated_by: [JUDGMENT/ARBITRATION_AWARD/LABOR_ARBITRATION_AWARD] -> [COURT/ARBITRATION_INSTITUTION] (案件由法院/仲裁机构审理)
+    
+    #### 九、立法解释与法规关系（Legislative Interpretation Relations）【P0优先级 - 效力最高】
+    - legislative_interprets: [LEGISLATIVE_INTERPRETATION] -> [LAW/ARTICLE] (立法解释解释法律条文，效力等同法律)
+    - authorizes: [LAW] -> [LEGISLATIVE_INTERPRETATION] (法律授权进行立法解释)
+    
+    #### 十、法律批复与指导关系（Judicial Reply & Guidance Relations）【P0优先级】
+    - replies_to: [JUDICIAL_REPLY] -> [LEGAL_QUESTION] (批复针对具体法律问题)
+    - guides_application: [JUDICIAL_REPLY/JUDICIAL_MEETING_MINUTES] -> [LAW/ARTICLE] (批复/纪要指导法条适用)
+    - binding_on: [JUDICIAL_REPLY/JUDICIAL_MEETING_MINUTES] -> [COURT/PROCURATORATE] (对各级法院/检察院有约束力)
+    
+    #### 十一、国际条约关系（International Treaty Relations）【P1优先级】
+    - implements: [LAW/REGULATION] -> [INTERNATIONAL_TREATY] (国内法实施国际条约)
+    - accedes_to: [CHINA] -> [INTERNATIONAL_TREATY] (中国加入/批准条约)
+    - prevails_over: [INTERNATIONAL_TREATY] -> [LAW] (条约优先于国内法，除宪法)
+    
+    #### 十二、仲裁关系（Arbitration Relations）【P1优先级】
+    - arbitrated_by: [ARBITRATION_AWARD] -> [ARBITRATION_INSTITUTION] (由仲裁机构裁决)
+    - enforced_by: [ARBITRATION_AWARD] -> [COURT] (由法院强制执行)
+    - vacated_by: [ARBITRATION_AWARD] -> [JUDGMENT] (仲裁裁决被法院撤销)
+    
+    #### 十三、行政执法关系（Administrative Enforcement Relations）【P1优先级】
+    - imposes_penalty: [ADMINISTRATIVE_PENALTY] -> [PERSON/ORG] (对当事人施加处罚)
+    - based_on_law: [ADMINISTRATIVE_PENALTY] -> [LAW/REGULATION] (处罚依据的法律法规)
+    - challenged_by: [ADMINISTRATIVE_PENALTY] -> [ADMINISTRATIVE_RECONSIDERATION/JUDGMENT] (被行政复议或诉讼挑战)
+    - upholds: [ADMINISTRATIVE_RECONSIDERATION] -> [ADMINISTRATIVE_PENALTY] (复议维持原处罚)
+    - revokes: [ADMINISTRATIVE_RECONSIDERATION] -> [ADMINISTRATIVE_PENALTY] (复议撤销原处罚)
+    
+    #### 十四、检察监督关系（Procuratorial Supervision Relations）【P2优先级】
+    - supervises: [PROCURATORIAL_SUGGESTION] -> [ORG/COURT] (检察建议监督单位或法院)
+    - protests_against: [PROTEST] -> [JUDGMENT] (抗诉针对的判决)
+    - initiates_retrial: [PROTEST] -> [JUDGMENT] (抗诉启动再审)
+    
+    #### 十五、劳动争议关系（Labor Dispute Relations）【P2优先级】
+    - precedes: [LABOR_ARBITRATION_AWARD] -> [JUDGMENT] (劳动仲裁是诉讼的前置程序)
+    - disputes_employment: [PERSON] -> [ORG] (劳动者与用人单位的争议)
+    
+    #### 十六、地方法规关系（Local Regulation Relations）【P2优先级】
+    - implements_locally: [LOCAL_REGULATION] -> [LAW] (地方法规实施上位法)
+    - applies_in_region: [LOCAL_REGULATION] -> [LOCATION] (在特定行政区域内适用)
+
+    ## 要求（统一知识图谱核心原则）
     1. 关系提取必须基于提供的文本内容，不得臆测不存在的关系
     2. 结果必须以JSON数组格式输出，每个关系为数组中的一个对象
     3. 每个关系对象必须包含 source, target, description 和 strength 字段
     4. 不要输出任何解释或额外内容，只输出JSON数组
     5. 若没有找到任何关系，返回空数组 []
+    
+    ### 统一知识图谱特殊要求：
+    6. **跨文档关系优先**：优先识别判决书引用法条、法条引用上位法、司法解释解释法条、指导性案例指导判决等跨文档关系
+    7. **关系类型精确**：严格区分 cites(引用)、applies(适用)、interprets(解释)、based_on(基于)、guides(指导)、references(参考) 等细微差别
+    8. **完整法律推理链**：尽可能提取完整的推理链条，如：证据 proves 犯罪事实 → 被告人 accused_of 罪名 → 判决 applies 法条 → 判决 based_on_guiding_case 指导性案例 → 被告人 sentenced_to 刑罚
+    9. **元数据关系**：建立文档与发文机关、生效时间等元数据的关系
+    10. **双向关系考虑**：某些关系需要考虑双向性（如similar_to），某些关系是单向的（如issued_by、guides）
+    11. **指导性案例特殊处理**：当识别到指导性案例时，必须建立 guides 关系，表明其对普通判决的指导作用
 
     ## 关系提取规则
     - 只有在文本中明确体现的关系才应被提取
@@ -348,147 +550,152 @@ conversation:
        - 确保关系描述与关系强度匹配
     6. 将所有有效关系组织为JSON数组
 
-    ## 示例
+    ## 示例（法律领域统一知识图谱）
     [输入]
     实体： [
       {
-        "title": "红楼梦",
-        "type": "Work",
-        "description": "红楼梦是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书"
+        "title": "(2023)京01刑初123号判决书",
+        "type": "JUDGMENT",
+        "description": "北京市第一中级人民法院作出的刑事判决书"
       },
       {
-        "title": "石头记",
-        "type": "Work",
-        "description": "石头记是红楼梦的别名"
+        "title": "张某",
+        "type": "PERSON",
+        "description": "被告人，被指控犯盗窃罪"
       },
       {
-        "title": "曹雪芹",
-        "type": "Person",
-        "description": "曹雪芹是清代作家，红楼梦的作者，创作了前80回"
+        "title": "盗窃罪",
+        "type": "CRIME",
+        "description": "以非法占有为目的，秘密窃取公私财物的行为"
       },
       {
-        "title": "高鹗",
-        "type": "Person",
-        "description": "高鹗是红楼梦后40回的续作者"
+        "title": "中华人民共和国刑法第264条",
+        "type": "ARTICLE",
+        "description": "规定盗窃公私财物，数额较大的，或者多次盗窃、入户盗窃、携带凶器盗窃、扒窃的，处三年以下有期徒刑、拘役或者管制，并处或者单处罚金"
       },
       {
-        "title": "贾宝玉",
-        "type": "Person",
-        "description": "贾宝玉是红楼梦中的主要角色，爱情悲剧的主角之一"
+        "title": "最高人民法院关于审理盗窃案件具体应用法律若干问题的解释",
+        "type": "JUDICIAL_INTERPRETATION",
+        "description": "对盗窃罪的具体适用标准作出解释"
       },
       {
-        "title": "林黛玉",
-        "type": "Person",
-        "description": "林黛玉是红楼梦中的主要角色，爱情悲剧的主角之一"
+        "title": "指导案例第117号（陈某盗窃案）",
+        "type": "GUIDING_CASE",
+        "description": "最高人民法院发布的关于盗窃罪量刑的指导性案例"
       },
       {
-        "title": "薛宝钗",
-        "type": "Person",
-        "description": "薛宝钗是红楼梦中的主要角色，爱情悲剧的主角之一"
+        "title": "有期徒刑三年",
+        "type": "PUNISHMENT",
+        "description": "对被告人判处的刑罚"
       },
       {
-        "title": "四大家族",
-        "type": "Concept",
-        "description": "四大家族是红楼梦中的贾、史、王、薛四个家族，是小说的背景"
+        "title": "监控录像",
+        "type": "EVIDENCE",
+        "description": "拍摄到被告人作案过程的视频证据"
       },
       {
-        "title": "金陵十二钗",
-        "type": "Concept",
-        "description": "金陵十二钗是红楼梦中以贾宝玉为中心的十二位主要女性角色"
+        "title": "王律师",
+        "type": "LAWYER",
+        "description": "被告人的辩护律师"
       },
       {
-        "title": "乾隆年间",
-        "type": "Date",
-        "description": "乾隆年间指的是红楼梦成书的时间，约1743年前后"
+        "title": "北京市第一中级人民法院",
+        "type": "COURT",
+        "description": "作出判决的法院"
       },
       {
-        "title": "中国文学史",
-        "type": "Category",
-        "description": "红楼梦被视为中国文学史中现实主义的高峰之作"
+        "title": "李法官",
+        "type": "JUDGE",
+        "description": "主审本案的审判长"
+      },
+      {
+        "title": "最高人民法院",
+        "type": "ISSUING_AUTHORITY",
+        "description": "最高审判机关，发布司法解释和指导性案例"
       }
     ]
 
-    文本： 《红楼梦》，又名《石头记》，是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书。该书前80回由曹雪芹所著，后40回一般认为是高鹗所续。小说以贾、史、王、薛四大家族的兴衰为背景，以贾宝玉、林黛玉和薛宝钗的爱情悲剧为主线，刻画了以贾宝玉和金陵十二钗为中心的正邪两赋、贤愚并出的高度复杂的人物群像。成书于乾隆年间（1743年前后），是中国文学史上现实主义的高峰，对后世影响深远。
+    文本： 北京市第一中级人民法院审理查明：2023年5月，被告人张某在北京市朝阳区某小区内，趁无人之际盗窃他人财物价值人民币5万元。监控录像清晰记录了作案过程。被告人的辩护律师王律师提出从轻处罚的辩护意见。经合议庭评议，审判长李法官认为，被告人张某以非法占有为目的，秘密窃取他人财物，数额较大，其行为已构成盗窃罪。根据《中华人民共和国刑法》第264条的规定，结合最高人民法院《关于审理盗窃案件具体应用法律若干问题的解释》和指导案例第117号（陈某盗窃案）的指导精神，依法判处被告人张某有期徒刑三年，并处罚金人民币一万元。
 
     [输出]
     [
       {
-        "source": "曹雪芹",
-        "target": "红楼梦",
-        "description": "曹雪芹是红楼梦的主要作者，创作了前80回",
+        "source": "张某",
+        "target": "盗窃罪",
+        "description": "被告人张某被指控并认定犯盗窃罪",
         "strength": 10
       },
       {
-        "source": "高鹗",
-        "target": "红楼梦",
-        "description": "高鹗是红楼梦后40回的续作者",
+        "source": "张某",
+        "target": "有期徒刑三年",
+        "description": "被告人张某被判处有期徒刑三年",
         "strength": 10
       },
       {
-        "source": "红楼梦",
-        "target": "石头记",
-        "description": "石头记是红楼梦的别名",
+        "source": "(2023)京01刑初123号判决书",
+        "target": "中华人民共和国刑法第264条",
+        "description": "判决书引用刑法第264条作为定罪量刑的法律依据",
+        "strength": 10
+      },
+      {
+        "source": "(2023)京01刑初123号判决书",
+        "target": "最高人民法院关于审理盗窃案件具体应用法律若干问题的解释",
+        "description": "判决书参照该司法解释确定盗窃罪的具体适用标准",
         "strength": 9
       },
       {
-        "source": "红楼梦",
-        "target": "中国文学史",
-        "description": "红楼梦被视为中国文学史中现实主义的高峰之作",
-        "strength": 7
+        "source": "最高人民法院关于审理盗窃案件具体应用法律若干问题的解释",
+        "target": "中华人民共和国刑法第264条",
+        "description": "司法解释对刑法第264条的具体适用作出明确规定",
+        "strength": 10
       },
       {
-        "source": "贾宝玉",
-        "target": "林黛玉",
-        "description": "贾宝玉与林黛玉有深厚的爱情关系，是小说主线之一",
+        "source": "指导案例第117号（陈某盗窃案）",
+        "target": "(2023)京01刑初123号判决书",
+        "description": "指导性案例为本案判决提供了量刑参考和指导",
+        "strength": 9
+      },
+      {
+        "source": "指导案例第117号（陈某盗窃案）",
+        "target": "最高人民法院",
+        "description": "指导性案例由最高人民法院发布",
+        "strength": 10
+      },
+      {
+        "source": "监控录像",
+        "target": "盗窃罪",
+        "description": "监控录像证明了被告人实施盗窃行为的犯罪事实",
+        "strength": 9
+      },
+      {
+        "source": "监控录像",
+        "target": "(2023)京01刑初123号判决书",
+        "description": "监控录像作为关键证据支持判决结论",
+        "strength": 9
+      },
+      {
+        "source": "王律师",
+        "target": "张某",
+        "description": "王律师担任被告人张某的辩护律师",
         "strength": 8
       },
       {
-        "source": "贾宝玉",
-        "target": "薛宝钗",
-        "description": "贾宝玉与薛宝钗的关系是小说爱情悲剧主线的一部分",
+        "source": "李法官",
+        "target": "(2023)京01刑初123号判决书",
+        "description": "李法官作为审判长主审本案并作出判决",
         "strength": 8
       },
       {
-        "source": "贾宝玉",
-        "target": "金陵十二钗",
-        "description": "贾宝玉是金陵十二钗故事的中心人物",
-        "strength": 8
+        "source": "(2023)京01刑初123号判决书",
+        "target": "北京市第一中级人民法院",
+        "description": "判决书由北京市第一中级人民法院作出",
+        "strength": 10
       },
       {
-        "source": "红楼梦",
-        "target": "贾宝玉",
-        "description": "贾宝玉是红楼梦中的主要角色",
-        "strength": 7
-      },
-      {
-        "source": "红楼梦",
-        "target": "林黛玉",
-        "description": "林黛玉是红楼梦中的主要角色",
-        "strength": 7
-      },
-      {
-        "source": "红楼梦",
-        "target": "薛宝钗",
-        "description": "薛宝钗是红楼梦中的主要角色",
-        "strength": 7
-      },
-      {
-        "source": "红楼梦",
-        "target": "四大家族",
-        "description": "四大家族是红楼梦的背景设定",
-        "strength": 7
-      },
-      {
-        "source": "红楼梦",
-        "target": "金陵十二钗",
-        "description": "金陵十二钗是红楼梦中的重要概念",
-        "strength": 7
-      },
-      {
-        "source": "红楼梦",
-        "target": "乾隆年间",
-        "description": "红楼梦成书于乾隆年间，约1743年前后",
-        "strength": 6
+        "source": "中华人民共和国刑法第264条",
+        "target": "盗窃罪",
+        "description": "刑法第264条定义和规定盗窃罪的构成要件及刑罚",
+        "strength": 10
       }
     ]
 
@@ -522,60 +729,322 @@ conversation:
 
 # 知识库配置
 knowledge_base:
-  chunk_size: 512
-  chunk_overlap: 50
-  split_markers: ["\n\n", "\n", "。"]
-  image_processing:
-    enable_multimodal: true
+  # 分块大小：1000字符，适合法律文档的条款和判决段落完整性
+  # 法律文档特点：单条法条150-400字，判决段落300-800字，1000字符确保完整推理链
+  chunk_size: 1000
+  
+  # 分块重叠：200字符，确保跨chunk实体关系完整性
+  # 法律文档逻辑严密，更大重叠保证引用关系（判决书→法条→司法解释）不被截断
+  chunk_overlap: 200
+  
+  # 分隔符：按优先级排序，优先识别法律文档结构
+  split_markers: 
+    # 一级：文档结构分隔符
+    - "\n\n\n"      # 大章节分隔
+    - "\n\n"        # 段落分隔
+    # 二级：法律层级标记（关键优化）
+    - "。\n"        # 句末换行（法条结尾常用）
+    - "；\n"        # 分号换行（法条款项分隔）
+    - "\n第"        # 法条章节标记："第一章"、"第123条"
+    - "\n（"        # 法条项标记："（一）"、"（二）"
+    # 三级：语义边界
+    - "。"          # 中文句号
+    - "；"          # 中文分号（法条内款项）
+    - "："          # 冒号（法条定义）
+    - "？"          # 问号
+    - "！"          # 感叹号
+    # 四级：兜底分隔符
+    - "\n"          # 单换行
+    - "，"          # 逗号（最后兜底）
+    
+  # 【已废弃】旧版多模态配置，请使用下方 vlm 配置
+  # image_processing:
+  #   enable_multimodal: true
+  
+  # VLM（视觉语言模型）默认配置 - 用于多模态文档处理
+  vlm:
+    enabled: true              # 是否默认启用多模态功能
+    model_id: ""               # 默认 VLM 模型ID（空表示使用系统配置的默认模型）
+  
+  # 默认 Embedding 模型ID - 用于向量化文本
+  default_embedding_model_id: "text-embedding-3-small"
+  
+  # 默认摘要模型ID - 用于生成文档摘要
+  default_summary_model_id: "gpt-4o-mini"
+  
+  # 问题生成默认配置 - 为文档块生成问题以提高召回率
+  question_generation:
+    enabled: false             # 是否默认启用问题生成功能
+    question_count: 3          # 每个文档块生成的问题数量（最大10）
 
 extract:
   extract_graph:
     description: |
       请基于给定文本，按以下步骤完成信息提取任务，确保逻辑清晰、信息完整准确：
 
-      ## 一、实体提取与属性补充
-      1. **提取核心实体**：通读文本，按逻辑顺序（如文本叙述顺序、实体关联紧密程度）提取所有与任务相关的核心实体。
-      2. **补充实体详细属性**：针对每个提取的实体，全面补充其在文本中明确提及的详细属性，确保无关键属性遗漏。
+      ## 特别说明：中国法律知识图谱统一抽取
+      本任务面向12大法律文档源（法律法规、司法解释、判决书、指导性案例、立法解释、司法批复、会议纪要、国际条约、仲裁裁决、行政处罚、地方法规等），核心目标是构建"统一知识图谱"，实现跨文档源的关系连接。
 
-      ## 二、关系提取与验证
+      ## 前置步骤：文档类型识别
+      1. **识别文档类型**：首先判断文本属于哪种法律文档（判决书/法律法规/司法解释/指导性案例/立法解释/司法批复/会议纪要/仲裁裁决/行政处罚等）
+      2. **提取文档元数据**：识别案号、文号、发文机关、生效时间、效力层级等唯一标识
+
+      ## 一、实体提取与属性补充（法律领域特别要求）
+      1. **提取核心实体**：通读文本，按逻辑顺序提取所有与任务相关的核心实体，特别关注：
+         - 文档类型实体（判决书、法律、司法解释、指导性案例等）及其唯一标识
+         - 法条结构实体（法律名称、章、条、款、项）
+         - 法律要素实体（罪名、案由、刑罚、责任等）
+         - 参与主体实体（当事人、法院、律师、发文机关等）
+      2. **补充实体详细属性**：针对每个提取的实体，全面补充其在文本中明确提及的详细属性：
+         - 法条必须关联所属法律，如"《刑法》第一百三十三条"
+         - 案号必须完整，如"(2023)京01刑初123号"
+         - 当事人必须标注角色（被告人、原告、证人等）
+      3. **标准化命名**：
+         - 法律名称必须包含书名号：《中华人民共和国刑法》
+         - 法条号必须完整：第一百三十三条之一
+         - 案号必须完整：(2023)京01刑初123号
+
+      ## 二、关系提取与验证（统一知识图谱核心）
       1. **明确关系类型**：仅从指定关系列表中选择对应类型，限定关系类型为: %s。
-      2. **提取有效关系**：基于已提取的实体及属性，识别文本中真实存在的关系，确保关系符合文本事实、无虚假关联。
-      3. **明确关系主体**：对每一组提取的关系，清晰标注两个关联主体，避免主体混淆。
-      4. **补充关联属性**：若文本中存在与该关系直接相关的补充信息，需将该信息作为关系的关联属性补充，进一步完善关系信息。
+      2. **跨文档关系优先**：优先识别以下高价值关系：
+         - 判决书 → 法条：引用、适用、参照
+         - 法条 → 法律：属于、组成部分
+         - 司法解释 → 法条：解释、澄清、细化
+         - 立法解释 → 法条：立法解释（效力最高，强度10）
+         - 指导性案例 → 判决书：指导（准约束力，强度9）
+         - 司法批复/会议纪要 → 法条：批复、指导适用（P0优先级）
+         - 国际条约 → 法律：优先、实施（宪法地位）
+         - 仲裁裁决 → 法院：执行、撤销
+         - 行政处罚 → 法规：基于法规、被质疑
+      3. **法律推理链完整性**：尽可能提取完整的推理链条：
+         - 证据 → 事实 → 罪名/案由 → 法条 → 刑罚/责任
+         - 判决书 → 法条 → 上位法 → 司法解释
+         - 判决书 → 指导性案例 → 法条
+      4. **提取有效关系**：基于已提取的实体及属性，识别文本中真实存在的关系，确保关系符合文本事实、无虚假关联。
+      5. **明确关系主体**：对每一组提取的关系，清晰标注两个关联主体，避免主体混淆。
+      6. **补充关联属性**：若文本中存在与该关系直接相关的补充信息，需将该信息作为关系的关联属性补充，进一步完善关系信息。
+      
+      ## 三、质量检查（法律知识图谱专项）
+      1. **文档类型实体检查**：确保每个文本都提取了文档本身作为实体
+      2. **引用关系检查**：确保所有引用的法律文件都被识别为实体和关系
+      3. **层级结构检查**：确保法条与所属法律的层级关系完整
+      4. **角色标注检查**：确保所有人物实体都标注了角色
     tags:
-      - "作者"
-      - "别名"
+      # 一、法规体系内关系（Intra-Legal System）
+      - "属于"
+      - "组成部分"
+      - "修订"
+      - "废止"
+      - "替代"
+      - "基于"
+      
+      # 二、司法解释与法规关系（Interpretation-Law Relations）
+      - "解释"
+      - "澄清"
+      - "细化"
+      
+      # 三、判决书与法规关系（Judgment-Law Relations）
+      - "引用"
+      - "适用"
+      - "参照"
+      - "援引"
+      
+      # 三-A、指导性案例与参考案例关系（Guiding/Reference Case Relations）
+      - "指导"
+      - "参考"
+      - "发布"
+      - "示范"
+      - "阐释"
+      
+      # 四、判决书与案件实体关系（Judgment-Case Relations）
+      - "被指控"
+      - "被起诉"
+      - "判处"
+      - "承担责任"
+      - "代理"
+      - "主审"
+      - "公诉"
+      
+      # 五、证据与事实关系（Evidence Relations）
+      - "证明"
+      - "支持"
+      - "矛盾"
+      
+      # 六、案件关联关系（Case Relations）
+      - "类似案例"
+      - "引用判例"
+      - "上诉"
+      - "基于指导性案例"
+      
+      # 七、概念关系（Concept Relations）
+      - "定义"
+      - "包含"
+      - "涉及概念"
+      
+      # 八、组织与文档关系（Organization-Document Relations）
+      - "发文"
+      - "审理"
+      
+      # 九、立法解释与法规关系（Legislative Interpretation Relations - P0）
+      - "立法解释"
+      - "授权解释"
+      
+      # 十、法律批复与指导关系（Judicial Reply & Guidance Relations - P0）
+      - "批复"
+      - "指导适用"
+      - "约束"
+      
+      # 十一、国际条约关系（International Treaty Relations - P1）
+      - "实施"
+      - "加入"
+      - "优先"
+      
+      # 十二、仲裁关系（Arbitration Relations - P1）
+      - "仲裁"
+      - "执行"
+      - "撤销仲裁"
+      
+      # 十三、行政执法关系（Administrative Enforcement Relations - P1）
+      - "处罚"
+      - "基于法规"
+      - "被质疑"
+      - "维持"
+      - "撤销"
+      
+      # 十四、检察监督关系（Procuratorial Supervision Relations - P2）
+      - "监督"
+      - "抗诉"
+      - "启动再审"
+      
+      # 十五、劳动争议关系（Labor Dispute Relations - P2）
+      - "劳动仲裁前置"
+      - "劳动争议"
+      
+      # 十六、地方法规关系（Local Regulation Relations - P2）
+      - "地方实施"
+      - "区域适用"
     examples:
       - text: |
-          《红楼梦》，又名《石头记》，是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书。该书前80回由曹雪芹所著，后40回一般认为是高鹗所续。
-          小说以贾、史、王、薛四大家族的兴衰为背景，以贾宝玉、林黛玉和薛宝钗的爱情悲剧为主线，刻画了以贾宝玉和金陵十二钗为中心的正邪两赋、贤愚并出的高度复杂的人物群像。
-          成书于乾隆年间（1743年前后），是中国文学史上现实主义的高峰，对后世影响深远。
+          北京市第一中级人民法院刑事判决书 (2023)京01刑初123号。公诉机关北京市人民检察院第一分院。被告人张三，男，1985年5月1日出生。辩护人李律师，北京某某律师事务所律师。被告人张三于2023年5月1日酒后驾驶机动车，在朝阳区撞伤行人李四。经鉴定，张三血液酒精含量为180mg/100ml。本院依据《中华人民共和国刑法》第一百三十三条之一及《最高人民法院关于审理道路交通事故刑事案件具体应用法律若干问题的解释》第二条，判决被告人张三犯危险驾驶罪，判处拘役两个月，并处罚金人民币五千元。
         node:
-          - name: "红楼梦"
+          - name: "(2023)京01刑初123号"
             attributes:
-              - "中国古典四大名著之一"
-              - "又名《石头记》"
-              - "被誉为中国封建社会的百科全书"
-          - name: "石头记"
+              - "北京市第一中级人民法院刑事判决书案号"
+          - name: "北京市第一中级人民法院"
             attributes:
-              - "《红楼梦》的别名"
-          - name: "曹雪芹"
+              - "审理本案的法院"
+          - name: "张三"
             attributes:
-              - "清代作家"
-              - "《红楼梦》前 80 回的作者"
-          - name: "高鹗"
+              - "被告人，男，1985年5月1日出生"
+          - name: "李四"
             attributes:
-              - "一般认为是《红楼梦》后 40 回的续写者"
+              - "被害人，被撞伤的行人"
+          - name: "《中华人民共和国刑法》"
+            attributes:
+              - "本案适用的法律"
+          - name: "第一百三十三条之一"
+            attributes:
+              - "《刑法》危险驾驶罪条款"
+          - name: "危险驾驶罪"
+            attributes:
+              - "被告人张三被判定的罪名"
+          - name: "拘役两个月"
+            attributes:
+              - "主刑"
         relation:
-          - node1: "红楼梦"
-            node2: "曹雪芹"
-            type: "作者"
-          - node1: "红楼梦"
-            node2: "高鹗"
-            type: "作者"
-          - node1: "红楼梦"
-            node2: "石头记"
-            type: "别名"
+          - node1: "张三"
+            node2: "危险驾驶罪"
+            type: "被指控"
+          - node1: "张三"
+            node2: "拘役两个月"
+            type: "判处"
+          - node1: "(2023)京01刑初123号"
+            node2: "《中华人民共和国刑法》"
+            type: "引用"
+          - node1: "(2023)京01刑初123号"
+            node2: "第一百三十三条之一"
+            type: "适用"
+          - node1: "第一百三十三条之一"
+            node2: "《中华人民共和国刑法》"
+            type: "属于"
+      - text: |
+          《中华人民共和国刑法》由全国人民代表大会于1979年7月1日通过，1997年3月14日修订。第一百三十三条规定：违反交通运输管理法规，因而发生重大事故，致人重伤、死亡或者使公私财产遭受重大损失的，处三年以下有期徒刑或者拘役。第一百三十三条之一规定：在道路上驾驶机动车，有下列情形之一的，处拘役，并处罚金：（一）追逐竞驶，情节恶劣的；（二）醉酒驾驶机动车的。
+        node:
+          - name: "《中华人民共和国刑法》"
+            attributes:
+              - "由全国人民代表大会制定的刑事基本法律"
+              - "1979年通过，1997年修订"
+          - name: "全国人民代表大会"
+            attributes:
+              - "《刑法》的制定机关"
+          - name: "第一百三十三条"
+            attributes:
+              - "《刑法》交通肇事罪条款"
+          - name: "第一百三十三条之一"
+            attributes:
+              - "《刑法》危险驾驶罪条款"
+          - name: "交通肇事罪"
+            attributes:
+              - "违反交通运输管理法规导致重大事故的犯罪"
+          - name: "危险驾驶罪"
+            attributes:
+              - "在道路上醉驾或追逐竞驶的犯罪"
+        relation:
+          - node1: "《中华人民共和国刑法》"
+            node2: "全国人民代表大会"
+            type: "发文"
+          - node1: "第一百三十三条"
+            node2: "《中华人民共和国刑法》"
+            type: "属于"
+          - node1: "第一百三十三条之一"
+            node2: "《中华人民共和国刑法》"
+            type: "属于"
+          - node1: "第一百三十三条"
+            node2: "交通肇事罪"
+            type: "定义"
+          - node1: "第一百三十三条之一"
+            node2: "危险驾驶罪"
+            type: "定义"
+      - text: |
+          最高人民法院指导案例123号：李某诉某保险公司交通事故责任纠纷案。裁判要点：机动车交通事故责任强制保险的保险期间届满后，被保险人未续保而发生保险事故的，保险公司不承担赔偿责任。本案参照《中华人民共和国保险法》第十四条和《机动车交通事故责任强制保险条例》第二条的规定，判决驳回原告诉讼请求。本指导性案例对类似案件的审理具有指导意义。
+        node:
+          - name: "指导案例123号"
+            attributes:
+              - "最高人民法院发布的指导性案例"
+          - name: "李某"
+            attributes:
+              - "原告"
+          - name: "某保险公司"
+            attributes:
+              - "被告"
+          - name: "交通事故责任纠纷"
+            attributes:
+              - "案由"
+          - name: "《中华人民共和国保险法》"
+            attributes:
+              - "案件参照的法律"
+          - name: "第十四条"
+            attributes:
+              - "《保险法》相关条款"
+          - name: "机动车交通事故责任强制保险"
+            attributes:
+              - "案件涉及的法律概念"
+        relation:
+          - node1: "李某"
+            node2: "交通事故责任纠纷"
+            type: "被起诉"
+          - node1: "指导案例123号"
+            node2: "《中华人民共和国保险法》"
+            type: "引用"
+          - node1: "指导案例123号"
+            node2: "第十四条"
+            type: "适用"
+          - node1: "第十四条"
+            node2: "《中华人民共和国保险法》"
+            type: "属于"
+          - node1: "指导案例123号"
+            node2: "机动车交通事故责任强制保险"
+            type: "示范"
   extract_entity:
     description: |
       请基于用户给的问题，按以下步骤处理关键信息提取任务：
@@ -583,11 +1052,21 @@ extract:
       2. 提取关键实体：围绕梳理出的逻辑关系，精准提取文本中的关键信息并归类为明确实体，确保不遗漏核心信息、不添加冗余内容；
       3. 排序实体优先级：按实体与文本核心主题的关联紧密程度排序，优先呈现对理解文本主旨最重要的实体；
     examples:
-      - text: "《红楼梦》，又名《石头记》，是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书。"
+      - text: "交通肇事罪的量刑标准是什么？"
         node:
-          - name: "红楼梦"
-          - name: "曹雪芹"
-          - name: "中国古典四大名著"
+          - name: "交通肇事罪"
+          - name: "量刑标准"
+          - name: "刑法"
+      - text: "劳动合同纠纷如何处理？"
+        node:
+          - name: "劳动合同纠纷"
+          - name: "处理程序"
+          - name: "劳动仲裁"
+      - text: "《民法典》第一千零六十五条规定了什么？"
+        node:
+          - name: "《民法典》"
+          - name: "第一千零六十五条"
+          - name: "法律规定"
   fabri_text:
     with_tag: |
       请随机生成一段文本，要求内容与 %s 等相关，字数在 [50-200] 之间，并且尽量包含一些与这些标签相关的专业术语或典型元素，使文本更具针对性和相关性。
@@ -619,4 +1098,4 @@ web_search:
 # 租户配置
 tenant:
   # 是否启用跨租户访问功能（内网环境可开启）
-  enable_cross_tenant_access: false
+  enable_cross_tenant_access: true

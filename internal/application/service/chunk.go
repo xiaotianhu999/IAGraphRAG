@@ -152,7 +152,7 @@ func (s *chunkService) ListPagedChunksByKnowledgeID(ctx context.Context,
 		"",
 		"",
 		"",
-		"",
+		"", // Default empty means chunk_index ASC order
 	)
 	if err != nil {
 		logger.ErrorWithFields(ctx, err, map[string]interface{}{

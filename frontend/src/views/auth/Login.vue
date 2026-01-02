@@ -178,28 +178,8 @@
       </svg>
     </div>
 
-    <!-- Logo - Top Left -->
-    <a href="https://github.com/Tencent/WeKnora" target="_blank" class="header-logo" :title="$t('common.github')">
-      <img src="@/assets/img/weknora.png" alt="WeKnora" class="logo-image" />
-    </a>
-
     <!-- Header Links - Top Right -->
     <div class="header-links">
-      <a href="https://weknora.weixin.qq.com" target="_blank" class="header-link" :title="$t('common.website')">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        <span class="link-text">{{ $t('common.website') }}</span>
-      </a>
-      
-      <a href="https://github.com/Tencent/WeKnora" target="_blank" class="header-link" :title="$t('common.info')">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-        </svg>
-        <span class="link-text">GitHub</span>
-      </a>
       
       <div class="language-switch">
         <button @click="toggleLanguageMenu" class="header-link" :title="languageOptions.find(l => l.value === currentLanguage)?.label">
@@ -227,47 +207,17 @@
       </div>
     </div>
 
-    <!-- Left Showcase Section -->
-    <div class="showcase-section">
-      <div class="showcase-content">
-        <p class="showcase-subtitle">{{ $t('platform.subtitle') }}</p>
-        <p class="showcase-description">{{ $t('platform.description') }}</p>
 
-        <div class="feature-tags">
-          <span class="tag">{{ $t('platform.rag') }}</span>
-          <span class="tag">{{ $t('platform.hybridSearch') }}</span>
-          <span class="tag">{{ $t('platform.localDeploy') }}</span>
-        </div>
-
-        <!-- Swiper Carousel -->
-        <div class="carousel-container">
-          <swiper
-            :modules="modules"
-            :slides-per-view="1"
-            :loop="true"
-            :autoplay="{
-              delay: 4000,
-              disableOnInteraction: false,
-            }"
-            :effect="'fade'"
-            :fade-effect="{ crossFade: true }"
-            :pagination="{ clickable: true, dynamicBullets: false }"
-            :speed="800"
-            class="screenshot-swiper"
-          >
-            <swiper-slide v-for="(slide, index) in slides" :key="index">
-              <div class="slide-content">
-                <img :src="slide.image" :alt="slide.title" class="slide-image" />
-              </div>
-            </swiper-slide>
-          </swiper>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Form Section -->
+    <!-- Form Section -->
     <div class="form-section">
       <div class="form-panel">
+        <!-- Logo - Centered -->
+        <div class="form-logo">
+          <a href="https://www.aiplusall.com.cn" target="_blank" :title="$t('common.github')">
+            <img src="@/assets/img/logo.png" alt="aiplusall" class="logo-image" />
+          </a>
+        </div>
+
         <!-- Login Card -->
         <div class="form-card" v-if="!isRegisterMode">
                 <div class="form-header">
@@ -323,21 +273,6 @@
           </a>
         </div>
 
-            <!-- Features list -->
-            <div class="login-features">
-              <div class="feature-item">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">{{ $t('platform.multimodalParsing') }}</span>
-              </div>
-              <div class="feature-item">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">{{ $t('platform.hybridSearchEngine') }}</span>
-              </div>
-              <div class="feature-item">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">{{ $t('platform.ragQandA') }}</span>
-              </div>
-            </div>
       </div>
     </div>
 
@@ -441,45 +376,13 @@
 import { ref, reactive, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Autoplay, EffectFade, Pagination } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/effect-fade'
-import 'swiper/css/pagination'
 import { login, register } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 
-// Import screenshot images
-import screenshot1 from '@/assets/img/screenshot-1.svg'
-import screenshot2 from '@/assets/img/screenshot-2.svg'
-import screenshot4 from '@/assets/img/screenshot-4.svg'
-
 const router = useRouter()
 const authStore = useAuthStore()
 const { t, locale } = useI18n()
-
-// Swiper modules
-const modules = [Autoplay, EffectFade, Pagination]
-
-// Carousel slides data
-const slides = [
-  {
-    image: screenshot4,
-    title: t('platform.carousel.agenticRagTitle'),
-    description: t('platform.carousel.agenticRagDesc')
-  },
-  {
-    image: screenshot2,
-    title: t('platform.carousel.hybridSearchTitle'),
-    description: t('platform.carousel.hybridSearchDesc')
-  },
-  {
-    image: screenshot1,
-    title: t('platform.carousel.smartDocRetrievalTitle'),
-    description: t('platform.carousel.smartDocRetrievalDesc')
-  }
-]
 
 // Form references
 const formRef = ref()
@@ -493,8 +396,7 @@ const showLanguageMenu = ref(false)
 // Language options
 const languageOptions = [
   { value: 'zh-CN', label: '简体中文', shortLabel: '中文', flag: '🇨🇳' },
-  { value: 'en-US', label: 'English', shortLabel: 'EN', flag: '🇺🇸' },
-  { value: 'ru-RU', label: 'Русский', shortLabel: 'RU', flag: '🇷🇺' }
+  { value: 'en-US', label: 'English', shortLabel: 'EN', flag: '🇺🇸' }
 ]
 
 // Current language computed from i18n
@@ -625,7 +527,9 @@ const handleLogin = async () => {
             email: response.user.email || '',
             avatar: response.user.avatar,
             tenant_id: String(response.tenant.id) || '',
+            role: response.user.role || 'user',
             can_access_all_tenants: response.user.can_access_all_tenants || false,
+            menu_config: response.user.menu_config || [],
             created_at: response.user.created_at || new Date().toISOString(),
             updated_at: response.user.updated_at || new Date().toISOString()
           })
@@ -638,6 +542,7 @@ const handleLogin = async () => {
             name: response.tenant.name || '',
             api_key: response.tenant.api_key || '',
             owner_id: response.user.id || '',
+            menu_config: response.tenant.menu_config || [],
             created_at: response.tenant.created_at || new Date().toISOString(),
             updated_at: response.tenant.updated_at || new Date().toISOString()
           })
@@ -954,126 +859,13 @@ onMounted(() => {
   }
 }
 
-/* Left Showcase Section */
-.showcase-section {
-  flex: 0 0 52%;
-  display: flex;
-  align-items: flex-end;
-  padding: 100px 30px 100px 50px;
-  box-sizing: border-box;
-  position: relative;
-}
-
-.showcase-content {
-  width: 100%;
-  max-width: 600px;
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 60px;
-}
-
-.showcase-subtitle {
-  margin-top: 0;
-  font-size: 22px;
-  color: rgba(255, 255, 255, 0.95);
-  margin: 0 0 8px 0;
-  font-family: "PingFang SC", sans-serif;
-  line-height: 1.4;
-  font-weight: 500;
-}
-
-.showcase-description {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 28px 0;
-  font-family: "PingFang SC", sans-serif;
-  line-height: 1.5;
-}
-
-.feature-tags {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 40px;
-  flex-wrap: wrap;
-}
-
-.tag {
-  display: inline-block;
-  padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: "PingFang SC", sans-serif;
-}
-
-/* Carousel */
-.carousel-container {
-  width: 100%;
-  margin-top: 48px;
-}
-
-.screenshot-swiper {
-  width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding-bottom: 40px;
-
-  :deep(.swiper-wrapper) {
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  :deep(.swiper-pagination) {
-    bottom: 15px !important;
-    z-index: 10;
-  }
-
-  :deep(.swiper-pagination-bullet) {
-    width: 10px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.5);
-    opacity: 1;
-    transition: all 0.3s ease;
-    margin: 0 6px !important;
-  }
-
-  :deep(.swiper-pagination-bullet-active) {
-    background: #ffffff;
-    width: 28px;
-    border-radius: 5px;
-  }
-}
-
-.slide-content {
-  width: 100%;
-  height: 100%;
-  background: #ffffff;
-  border-radius: 16px;
-  overflow: hidden;
+/* Form Section */
+.form-section {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.slide-image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain;
-}
-
-/* Right Form Section */
-.form-section {
-  flex: 0 0 48%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 40px 50px 100px 30px;
+  padding: 40px;
   box-sizing: border-box;
   position: relative;
 }
@@ -1081,31 +873,34 @@ onMounted(() => {
 .form-panel {
   width: 100%;
   max-width: 480px;
-  margin-bottom: 60px;
   position: relative;
   z-index: 2;
 }
 
-.header-logo {
-  position: fixed;
-  top: 32px;
-  left: 50px;
-  z-index: 100;
+.form-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
 
-  &:hover {
-    transform: translateY(-2px);
+  a {
+    display: block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
   }
 
   .logo-image {
-    width: 120px;
-      height: auto;
+    width: 140px;
+    height: auto;
     filter: brightness(1.1) contrast(1.05) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
     transition: all 0.3s ease;
   }
 
-  &:hover .logo-image {
+  a:hover .logo-image {
     filter: brightness(1.15) contrast(1.08) drop-shadow(0 6px 16px rgba(0, 0, 0, 0.3));
   }
 }
@@ -1248,12 +1043,12 @@ onMounted(() => {
   }
 
   &:hover {
-    background: #F3F4F6;
+    background: var(--td-bg-color-container-hover);
   }
 
   &.active {
-    background: #F0FDF4;
-    color: #059669;
+    background: var(--td-brand-color-light);
+    color: var(--td-brand-color);
   }
 }
 
@@ -1269,11 +1064,11 @@ onMounted(() => {
 }
 
 .form-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--td-bg-color-container);
   backdrop-filter: blur(20px);
   border-radius: 16px;
   padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.3);
+  box-shadow: var(--td-shadow-3);
   box-sizing: border-box;
   animation: slideInRight 0.4s ease-out;
   border: none;
@@ -1288,21 +1083,21 @@ onMounted(() => {
 .form-title {
   font-size: 24px;
     font-weight: 600;
-  color: #111827;
+  color: var(--td-text-color-primary);
   margin: 0 0 6px 0;
   font-family: "PingFang SC", sans-serif;
 }
 
 .form-welcome {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--td-text-color-secondary);
     margin: 0;
   font-family: "PingFang SC", sans-serif;
 }
 
 .form-subtitle {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--td-text-color-secondary);
   margin: 0;
   font-family: "PingFang SC", sans-serif;
 }
@@ -1310,7 +1105,7 @@ onMounted(() => {
 .form-content {
   :deep(.t-form-item__label) {
     font-size: 14px;
-    color: #111827;
+    color: var(--td-text-color-primary);
     font-weight: 500;
     margin-bottom: 8px;
     font-family: "PingFang SC", sans-serif;
@@ -1319,18 +1114,18 @@ onMounted(() => {
   }
 
   :deep(.t-input) {
-    border: 1px solid #E7E7E7;
+    border: 1px solid var(--td-component-border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--td-bg-color-container);
     transition: all 0.2s;
     
     &:focus-within {
-      border-color: #07C05F;
-      box-shadow: 0 0 0 3px rgba(7, 192, 95, 0.1);
+      border-color: var(--td-brand-color);
+      box-shadow: 0 0 0 3px var(--td-brand-color-focus);
     }
     
     &:hover {
-      border-color: #07C05F;
+      border-color: var(--td-brand-color);
     }
     
     .t-input__inner {
@@ -1467,19 +1262,6 @@ onMounted(() => {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .showcase-subtitle {
-    font-size: 18px;
-  }
-
-  .header-logo {
-    top: 26px;
-    left: 40px;
-
-    .logo-image {
-      width: 100px;
-    }
-  }
-
   .header-links {
     top: 22px;
     right: 22px;
@@ -1497,44 +1279,7 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .login-layout {
-    flex-direction: column;
-  }
-
-  .showcase-section {
-    flex: 0 0 auto;
-    min-height: 50vh;
-    padding: 40px 24px;
-  }
-
-  .showcase-content {
-    max-width: 100%;
-  }
-
-  .header-logo {
-    top: 22px;
-    left: 30px;
-
-    .logo-image {
-      width: 80px;
-    }
-  }
-
-  .showcase-subtitle {
-    font-size: 16px;
-    margin-bottom: 24px;
-  }
-
-  .feature-tags {
-    margin-bottom: 24px;
-  }
-
-  .carousel-container {
-    margin-top: 24px;
-  }
-
   .form-section {
-    flex: 0 0 auto;
     padding: 24px;
   }
 
@@ -1563,26 +1308,11 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .showcase-section {
-    padding: 32px 20px;
-  }
-
-  .header-logo {
-    top: 18px;
-    left: 20px;
-
+  .form-logo {
+    margin-bottom: 24px;
     .logo-image {
-      width: 70px;
+      width: 110px;
     }
-  }
-
-  .showcase-subtitle {
-    font-size: 14px;
-  }
-
-  .tag {
-    font-size: 12px;
-    padding: 6px 16px;
   }
 
   .form-section {

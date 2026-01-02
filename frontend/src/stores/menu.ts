@@ -16,7 +16,8 @@ interface MenuItem {
 const createMenuChildren = () => reactive<MenuChild[]>([])
 
 export const useMenuStore = defineStore('menuStore', () => {
-  const menuArr = reactive<MenuItem[]>([
+  const allMenus: MenuItem[] = [
+    { title: '', titleKey: 'menu.dashboard', icon: 'setting', path: 'admin/dashboard' },
     { title: '', titleKey: 'menu.knowledgeBase', icon: 'zhishiku', path: 'knowledge-bases' },
     {
       title: '',
@@ -27,8 +28,42 @@ export const useMenuStore = defineStore('menuStore', () => {
       children: createMenuChildren()
     },
     { title: '', titleKey: 'menu.settings', icon: 'setting', path: 'settings' },
+    { title: '', titleKey: 'menu.tenantManagement', icon: 'setting', path: 'admin/tenants' },
+    { title: '', titleKey: 'menu.userManagement', icon: 'setting', path: 'admin/users' },
+    { title: '', titleKey: 'menu.auditLog', icon: 'setting', path: 'admin/audit-logs' },
     { title: '', titleKey: 'menu.logout', icon: 'logout', path: 'logout' }
-  ])
+  ]
+
+  const menuArr = reactive<MenuItem[]>([...allMenus])
+
+  const setMenuConfig = (allowedPaths: string[], isSuperAdmin: boolean, role?: string) => {
+    const filtered = allMenus.filter(item => {
+      if (item.path === 'logout') return true
+      // 租户管理仅限超级管理员
+      if (item.path === 'admin/tenants') return isSuperAdmin
+      // 系统仪表盘允许超级管理员或租户管理员
+      if (item.path === 'admin/dashboard') return isSuperAdmin || role === 'admin'
+      // 用户管理和审计日志：超级管理员总是可见，租户管理员需检查配置
+      if (item.path === 'admin/users' || item.path === 'admin/audit-logs') {
+        if (isSuperAdmin) return true
+        if (role === 'admin') return allowedPaths.includes(item.path)
+        return false
+      }
+      // 其他菜单（知识库、对话、设置）：
+      // 超级管理员和租户管理员可见所有功能
+      // 普通用户根据配置决定权限
+      if (isSuperAdmin || role === 'admin') return true
+      
+      // 普通用户：严格按照租户配置的 menu_config 控制访问权限
+      // 如果配置为空，默认只允许 AI对话 功能
+      if (allowedPaths.length === 0) {
+        return item.path === 'creatChat'
+      }
+      return allowedPaths.includes(item.path)
+    })
+    menuArr.splice(0, menuArr.length, ...filtered)
+    applyMenuTranslations()
+  }
 
   const isFirstSession = ref(false)
   const firstQuery = ref('')
@@ -52,10 +87,8 @@ export const useMenuStore = defineStore('menuStore', () => {
   )
 
   const clearMenuArr = () => {
-    const chatMenu = menuArr[1]
-    if (chatMenu && chatMenu.children) {
-      chatMenu.children = createMenuChildren()
-    }
+    menuArr.splice(0, menuArr.length, ...allMenus)
+    applyMenuTranslations()
   }
 
   const updatemenuArr = (obj: any) => {
@@ -101,6 +134,7 @@ export const useMenuStore = defineStore('menuStore', () => {
     isFirstSession,
     firstQuery,
     firstMentionedItems,
+    setMenuConfig,
     clearMenuArr,
     updatemenuArr,
     updataMenuChildren,

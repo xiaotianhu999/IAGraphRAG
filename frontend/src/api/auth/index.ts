@@ -15,8 +15,10 @@ export interface LoginResponse {
     email: string
     avatar?: string
     tenant_id: number
+    role: 'admin' | 'user'
     can_access_all_tenants?: boolean
     is_active: boolean
+    menu_config?: string[]
     created_at: string
     updated_at: string
   }
@@ -29,6 +31,7 @@ export interface LoginResponse {
     business: string
     storage_quota: number
     storage_used: number
+    menu_config?: string[]
     created_at: string
     updated_at: string
   }
@@ -67,7 +70,9 @@ export interface UserInfo {
   email: string
   avatar?: string
   tenant_id: string
+  role: 'admin' | 'user'
   can_access_all_tenants?: boolean
+  menu_config?: string[]
   created_at: string
   updated_at: string
 }
@@ -83,6 +88,7 @@ export interface TenantInfo {
   owner_id: string
   storage_quota?: number
   storage_used?: number
+  menu_config?: string[]
   created_at: string
   updated_at: string
   knowledge_bases?: KnowledgeBaseInfo[]

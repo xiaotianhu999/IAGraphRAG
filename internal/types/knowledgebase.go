@@ -328,6 +328,93 @@ func (kb *KnowledgeBase) EnsureDefaults() {
 	}
 }
 
+// EnsureChunkingDefaults 确保分块配置具备默认值
+// 从 config.yaml 中读取全局默认配置，填充空值字段
+func (kb *KnowledgeBase) EnsureChunkingDefaults(defaultConfig *ChunkingConfig) {
+	if kb == nil {
+		return
+	}
+
+	// 如果完全没有配置，使用默认配置
+	if kb.ChunkingConfig.ChunkSize == 0 && kb.ChunkingConfig.ChunkOverlap == 0 && len(kb.ChunkingConfig.Separators) == 0 {
+		if defaultConfig != nil {
+			kb.ChunkingConfig = *defaultConfig
+		}
+		return
+	}
+
+	// 部分配置为空时，使用默认值填充
+	if defaultConfig != nil {
+		if kb.ChunkingConfig.ChunkSize == 0 {
+			kb.ChunkingConfig.ChunkSize = defaultConfig.ChunkSize
+		}
+		if kb.ChunkingConfig.ChunkOverlap == 0 {
+			kb.ChunkingConfig.ChunkOverlap = defaultConfig.ChunkOverlap
+		}
+		if len(kb.ChunkingConfig.Separators) == 0 {
+			kb.ChunkingConfig.Separators = defaultConfig.Separators
+		}
+	}
+}
+
+// EnsureVLMDefaults 确保 VLM 配置具备默认值
+// 从 config.yaml 中读取全局默认 VLM 配置，填充空值字段
+func (kb *KnowledgeBase) EnsureVLMDefaults(enabled bool, defaultModelID string) {
+	if kb == nil {
+		return
+	}
+
+	// 如果完全没有配置（新版本和老版本都为空），使用默认配置
+	if !kb.VLMConfig.Enabled && kb.VLMConfig.ModelID == "" &&
+		kb.VLMConfig.ModelName == "" && kb.VLMConfig.BaseURL == "" {
+		kb.VLMConfig.Enabled = enabled
+		if defaultModelID != "" {
+			kb.VLMConfig.ModelID = defaultModelID
+		}
+	}
+}
+
+// EnsureModelDefaults 确保模型配置具备默认值
+// 从 config.yaml 中读取全局默认模型配置，填充空值字段
+func (kb *KnowledgeBase) EnsureModelDefaults(defaultEmbeddingModelID, defaultSummaryModelID string) {
+	if kb == nil {
+		return
+	}
+
+	// 填充 Embedding 模型默认值
+	if kb.EmbeddingModelID == "" && defaultEmbeddingModelID != "" {
+		kb.EmbeddingModelID = defaultEmbeddingModelID
+	}
+
+	// 填充摘要模型默认值
+	if kb.SummaryModelID == "" && defaultSummaryModelID != "" {
+		kb.SummaryModelID = defaultSummaryModelID
+	}
+}
+
+// EnsureQuestionGenerationDefaults 确保问题生成配置具备默认值
+// 从 config.yaml 中读取全局默认问题生成配置，填充空值字段
+// 只对 document 类型知识库生效
+func (kb *KnowledgeBase) EnsureQuestionGenerationDefaults(defaultEnabled bool, defaultQuestionCount int) {
+	if kb == nil || kb.Type != KnowledgeBaseTypeDocument {
+		return
+	}
+
+	// 如果完全没有配置，使用默认配置
+	if kb.QuestionGenerationConfig == nil {
+		kb.QuestionGenerationConfig = &QuestionGenerationConfig{
+			Enabled:       defaultEnabled,
+			QuestionCount: defaultQuestionCount,
+		}
+		return
+	}
+
+	// 填充默认问题数量（如果为0）
+	if kb.QuestionGenerationConfig.QuestionCount == 0 && defaultQuestionCount > 0 {
+		kb.QuestionGenerationConfig.QuestionCount = defaultQuestionCount
+	}
+}
+
 // IsMultimodalEnabled 判断多模态是否启用（兼容新老版本配置）
 // 新版本：VLMConfig.IsEnabled()
 // 老版本：ChunkingConfig.EnableMultimodal

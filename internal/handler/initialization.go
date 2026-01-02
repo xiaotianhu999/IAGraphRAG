@@ -539,13 +539,20 @@ func validateNodeExtractConfig(ctx context.Context, req *InitializationRequest) 
 		logger.Error(ctx, "Node Extractor configuration incomplete")
 		return errors.NewBadRequestError("请正确配置环境变量NEO4J_ENABLE")
 	}
-	if req.NodeExtract.Text == "" || len(req.NodeExtract.Tags) == 0 {
-		logger.Error(ctx, "Node Extractor configuration incomplete")
-		return errors.NewBadRequestError("Node Extractor配置不完整")
+	// Allow empty fields to use default values from config.yaml
+	// Only validate non-empty fields for data integrity
+	if req.NodeExtract.Text == "" && len(req.NodeExtract.Tags) == 0 &&
+		len(req.NodeExtract.Nodes) == 0 && len(req.NodeExtract.Relations) == 0 {
+		// All fields are empty, will use default config
+		logger.Infof(ctx, "Node Extractor will use default configuration from config.yaml")
+		return nil
 	}
-	if len(req.NodeExtract.Nodes) == 0 || len(req.NodeExtract.Relations) == 0 {
-		logger.Error(ctx, "Node Extractor configuration incomplete")
-		return errors.NewBadRequestError("请先提取实体和关系")
+	// If user provides partial config, validate consistency
+	if len(req.NodeExtract.Nodes) > 0 && len(req.NodeExtract.Relations) == 0 {
+		return errors.NewBadRequestError("提供了节点配置但缺少关系配置")
+	}
+	if len(req.NodeExtract.Relations) > 0 && len(req.NodeExtract.Nodes) == 0 {
+		return errors.NewBadRequestError("提供了关系配置但缺少节点配置")
 	}
 	return nil
 }

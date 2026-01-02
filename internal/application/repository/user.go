@@ -68,31 +68,45 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 
 // UpdateUser updates a user
 func (r *userRepository) UpdateUser(ctx context.Context, user *types.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	return r.db.WithContext(ctx).InstanceSet("skip_tenant_isolation", true).Save(user).Error
+}
+
+// UpdateUserFields updates specific user fields using a map (avoids updating zero values)
+func (r *userRepository) UpdateUserFields(ctx context.Context, userID string, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).InstanceSet("skip_tenant_isolation", true).Model(&types.User{}).Where("id = ?", userID).Updates(updates).Error
 }
 
 // DeleteUser deletes a user
 func (r *userRepository) DeleteUser(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&types.User{}).Error
+	return r.db.WithContext(ctx).InstanceSet("skip_tenant_isolation", true).Where("id = ?", id).Delete(&types.User{}).Error
 }
 
-// ListUsers lists users with pagination
-func (r *userRepository) ListUsers(ctx context.Context, offset, limit int) ([]*types.User, error) {
+// ListUsers lists users with pagination and filters
+func (r *userRepository) ListUsers(ctx context.Context, tenantID uint64, page, pageSize int) ([]*types.User, int64, error) {
 	var users []*types.User
-	query := r.db.WithContext(ctx).Order("created_at DESC")
+	var total int64
 
-	if limit > 0 {
-		query = query.Limit(limit)
+	db := r.db.WithContext(ctx)
+	if tenantID == 0 {
+		db = db.InstanceSet("skip_tenant_isolation", true)
 	}
 
-	if offset > 0 {
-		query = query.Offset(offset)
+	query := db.Model(&types.User{})
+
+	if tenantID > 0 {
+		query = query.Where("tenant_id = ?", tenantID)
 	}
 
-	if err := query.Find(&users).Error; err != nil {
-		return nil, err
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return users, nil
+
+	offset := (page - 1) * pageSize
+	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
 }
 
 // authTokenRepository implements auth token repository interface

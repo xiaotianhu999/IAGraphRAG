@@ -95,6 +95,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(repository.NewModelRepository))
 	must(container.Provide(repository.NewUserRepository))
 	must(container.Provide(repository.NewAuthTokenRepository))
+	must(container.Provide(repository.NewAuditLogRepository))
 	must(container.Provide(neo4jRepo.NewNeo4jRepository))
 	must(container.Provide(repository.NewMCPServiceRepository))
 
@@ -112,9 +113,18 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(service.NewDatasetService))
 	must(container.Provide(service.NewEvaluationService))
 	must(container.Provide(service.NewUserService))
+	must(container.Provide(service.NewAuditLogService))
 	must(container.Provide(service.NewChunkExtractService))
+	must(container.Provide(service.NewGraphRebuildService))
 	must(container.Provide(service.NewMessageService))
 	must(container.Provide(service.NewMCPServiceService))
+	must(container.Provide(func(db *gorm.DB, auditService interfaces.AuditLogService) interfaces.DashboardService {
+		version := os.Getenv("VERSION")
+		if version == "" {
+			version = "v0.1.0"
+		}
+		return service.NewDashboardService(db, auditService, version)
+	}))
 
 	// Web search service (needed by AgentService)
 	must(container.Provide(service.NewWebSearchService))
@@ -148,6 +158,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Invoke(chatpipline.NewPluginSearchParallel))
 
 	// HTTP handlers layer
+	// Note: Handlers now require UserService for RBAC checks
 	must(container.Provide(handler.NewTenantHandler))
 	must(container.Provide(handler.NewKnowledgeBaseHandler))
 	must(container.Provide(handler.NewKnowledgeHandler))
@@ -163,6 +174,13 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(handler.NewSystemHandler))
 	must(container.Provide(handler.NewMCPServiceHandler))
 	must(container.Provide(handler.NewWebSearchHandler))
+	must(container.Provide(handler.NewUserHandler))
+	must(container.Provide(handler.NewAuditLogHandler))
+	must(container.Provide(handler.NewDashboardHandler))
+
+	// System Initialization
+	must(container.Provide(service.NewSystemInitializationService))
+	must(container.Provide(handler.NewSystemInitializationHandler))
 
 	// Router configuration
 	must(container.Provide(router.NewRouter))
@@ -234,23 +252,35 @@ func initContextStorage(redisClient *redis.Client) (llmcontext.ContextStorage, e
 func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 	var dialector gorm.Dialector
 	var migrateDSN string
+
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+
 	switch os.Getenv("DB_DRIVER") {
 	case "postgres":
 		// DSN for GORM (key-value format)
 		gormDSN := fmt.Sprintf(
 			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			os.Getenv("DB_HOST"),
-			os.Getenv("DB_PORT"),
-			os.Getenv("DB_USER"),
-			os.Getenv("DB_PASSWORD"),
-			os.Getenv("DB_NAME"),
+			dbHost,
+			dbPort,
+			dbUser,
+			dbPassword,
+			dbName,
 			"disable",
 		)
 		dialector = postgres.Open(gormDSN)
 
 		// DSN for golang-migrate (URL format)
 		// URL-encode password to handle special characters like !@#
-		dbPassword := os.Getenv("DB_PASSWORD")
 		encodedPassword := url.QueryEscape(dbPassword)
 
 		// Check if postgres is in RETRIEVE_DRIVER to determine skip_embedding
@@ -263,20 +293,20 @@ func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 
 		migrateDSN = fmt.Sprintf(
 			"postgres://%s:%s@%s:%s/%s?sslmode=disable&options=-c%%20app.skip_embedding=%s",
-			os.Getenv("DB_USER"),
+			dbUser,
 			encodedPassword, // Use encoded password
-			os.Getenv("DB_HOST"),
-			os.Getenv("DB_PORT"),
-			os.Getenv("DB_NAME"),
+			dbHost,
+			dbPort,
+			dbName,
 			skipEmbedding,
 		)
 
 		// Debug log (don't log password)
 		logger.Infof(context.Background(), "DB Config: user=%s host=%s port=%s dbname=%s",
-			os.Getenv("DB_USER"),
-			os.Getenv("DB_HOST"),
-			os.Getenv("DB_PORT"),
-			os.Getenv("DB_NAME"),
+			dbUser,
+			dbHost,
+			dbPort,
+			dbName,
 		)
 	default:
 		return nil, fmt.Errorf("unsupported database driver: %s", os.Getenv("DB_DRIVER"))
@@ -320,6 +350,9 @@ func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 	// Configure connection pool parameters
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetConnMaxLifetime(time.Duration(10) * time.Minute)
+
+	// Apply tenant isolation middleware
+	database.TenantIsolationMiddleware(db)
 
 	return db, nil
 }

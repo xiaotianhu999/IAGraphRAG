@@ -87,16 +87,42 @@ type ServerConfig struct {
 
 // KnowledgeBaseConfig 知识库配置
 type KnowledgeBaseConfig struct {
-	ChunkSize       int                    `yaml:"chunk_size"       json:"chunk_size"`
-	ChunkOverlap    int                    `yaml:"chunk_overlap"    json:"chunk_overlap"`
-	SplitMarkers    []string               `yaml:"split_markers"    json:"split_markers"`
-	KeepSeparator   bool                   `yaml:"keep_separator"   json:"keep_separator"`
+	ChunkSize     int      `yaml:"chunk_size"       json:"chunk_size"`
+	ChunkOverlap  int      `yaml:"chunk_overlap"    json:"chunk_overlap"`
+	SplitMarkers  []string `yaml:"split_markers"    json:"split_markers"`
+	KeepSeparator bool     `yaml:"keep_separator"   json:"keep_separator"`
+	// Deprecated: 旧版多模态配置，保留以向后兼容，请使用 VLM 配置
 	ImageProcessing *ImageProcessingConfig `yaml:"image_processing" json:"image_processing"`
+	// VLM 默认配置
+	VLM *VLMDefaultConfig `yaml:"vlm" json:"vlm"`
+	// 默认 Embedding 模型ID
+	DefaultEmbeddingModelID string `yaml:"default_embedding_model_id" json:"default_embedding_model_id"`
+	// 默认摘要模型ID
+	DefaultSummaryModelID string `yaml:"default_summary_model_id" json:"default_summary_model_id"`
+	// 问题生成默认配置
+	QuestionGeneration *QuestionGenerationDefaultConfig `yaml:"question_generation" json:"question_generation"`
 }
 
 // ImageProcessingConfig 图像处理配置
+// Deprecated: 旧版配置，保留以向后兼容，请使用 VLMDefaultConfig
 type ImageProcessingConfig struct {
 	EnableMultimodal bool `yaml:"enable_multimodal" json:"enable_multimodal"`
+}
+
+// VLMDefaultConfig VLM 默认配置
+type VLMDefaultConfig struct {
+	// 是否默认启用多模态功能
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	// 默认 VLM 模型ID（空表示使用系统默认）
+	ModelID string `yaml:"model_id" json:"model_id"`
+}
+
+// QuestionGenerationDefaultConfig 问题生成默认配置
+type QuestionGenerationDefaultConfig struct {
+	// 是否默认启用问题生成
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	// 默认生成问题数量
+	QuestionCount int `yaml:"question_count" json:"question_count"`
 }
 
 // TenantConfig 租户配置

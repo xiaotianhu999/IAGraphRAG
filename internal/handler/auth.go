@@ -19,9 +19,10 @@ import (
 // Provides functionality for user registration, login, logout, and token management
 // through the REST API endpoints
 type AuthHandler struct {
-	userService   interfaces.UserService
-	tenantService interfaces.TenantService
-	configInfo    *config.Config
+	userService     interfaces.UserService
+	tenantService   interfaces.TenantService
+	auditLogService interfaces.AuditLogService
+	configInfo      *config.Config
 }
 
 // NewAuthHandler creates a new auth handler instance with the provided services
@@ -31,11 +32,14 @@ type AuthHandler struct {
 //
 // Returns a pointer to the newly created AuthHandler
 func NewAuthHandler(configInfo *config.Config,
-	userService interfaces.UserService, tenantService interfaces.TenantService) *AuthHandler {
+	userService interfaces.UserService,
+	tenantService interfaces.TenantService,
+	auditLogService interfaces.AuditLogService) *AuthHandler {
 	return &AuthHandler{
-		configInfo:    configInfo,
-		userService:   userService,
-		tenantService: tenantService,
+		configInfo:      configInfo,
+		userService:     userService,
+		tenantService:   tenantService,
+		auditLogService: auditLogService,
 	}
 }
 
@@ -139,9 +143,37 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response, err := h.userService.Login(ctx, &req)
 	if err != nil {
 		logger.Errorf(ctx, "Failed to login user: %v", err)
+
+		// Record failed audit log
+		h.auditLogService.RecordLog(ctx, &types.AuditLog{
+			Username:  req.Email,
+			Action:    "login",
+			Resource:  "auth",
+			IP:        c.ClientIP(),
+			UserAgent: c.Request.UserAgent(),
+			Status:    "failure",
+			Details:   err.Error(),
+		})
+
 		appErr := errors.NewUnauthorizedError("Login failed").WithDetails(err.Error())
 		c.Error(appErr)
 		return
+	}
+
+	if response.Success && response.User != nil {
+		logger.Infof(ctx, "User %s logged in, CanAccessAllTenants: %v", response.User.Email, response.User.CanAccessAllTenants)
+
+		// Record audit log
+		h.auditLogService.RecordLog(ctx, &types.AuditLog{
+			UserID:    response.User.ID,
+			Username:  response.User.Username,
+			TenantID:  response.User.TenantID,
+			Action:    "login",
+			Resource:  "auth",
+			IP:        c.ClientIP(),
+			UserAgent: c.Request.UserAgent(),
+			Status:    "success",
+		})
 	}
 
 	// Check if login was successful
@@ -276,15 +308,23 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 
 	// Get tenant information
 	var tenant *types.Tenant
-	if user.TenantID > 0 {
-		tenant, err = h.tenantService.GetTenantByID(ctx, user.TenantID)
+	tenantID := user.TenantID
+	if ctxTenantID, ok := ctx.Value(types.TenantIDContextKey).(uint64); ok && ctxTenantID > 0 {
+		tenantID = ctxTenantID
+	}
+
+	if tenantID > 0 {
+		tenant, err = h.tenantService.GetTenantByID(ctx, tenantID)
 		if err != nil {
-			logger.Warnf(ctx, "Failed to get tenant info for user %s, tenant ID %d: %v", user.Email, user.TenantID, err)
+			logger.Warnf(ctx, "Failed to get tenant info for user %s, tenant ID %d: %v", user.Email, tenantID, err)
 			// Don't fail the request if tenant info is not available
 		}
 	}
 	userInfo := user.ToUserInfo()
-	userInfo.CanAccessAllTenants = user.CanAccessAllTenants && h.configInfo.Tenant.EnableCrossTenantAccess
+	// Update tenant ID if it was switched
+	userInfo.TenantID = tenantID
+	// Super admin should always have cross-tenant access if the flag is set on the user
+	userInfo.CanAccessAllTenants = user.CanAccessAllTenants
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{

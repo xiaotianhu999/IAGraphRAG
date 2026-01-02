@@ -2,6 +2,8 @@ package embedding
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -21,6 +23,22 @@ func NewBatchEmbedder(pool *ants.Pool) EmbedderPooler {
 type textEmbedding struct {
 	text    string
 	results []float32
+}
+
+// sanitizeVector removes NaN and Inf values from embedding vectors
+// Replaces invalid values with 0.0 to prevent JSON serialization errors
+func sanitizeVector(vec []float32) ([]float32, error) {
+	hasInvalid := false
+	for i, v := range vec {
+		if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+			vec[i] = 0.0
+			hasInvalid = true
+		}
+	}
+	if hasInvalid {
+		return vec, fmt.Errorf("vector contained NaN or Inf values, replaced with 0.0")
+	}
+	return vec, nil
 }
 
 func (e *batchEmbedder) BatchEmbedWithPool(ctx context.Context, model Embedder, texts []string) ([][]float32, error) {
@@ -60,12 +78,40 @@ func (e *batchEmbedder) BatchEmbedWithPool(ctx context.Context, model Embedder, 
 				mu.Unlock()
 				return
 			}
+
+			// Check if embedding result is valid
+			if len(embedding) == 0 {
+				mu.Lock()
+				if firstErr == nil {
+					firstErr = fmt.Errorf("received empty embedding result")
+				}
+				mu.Unlock()
+				return
+			}
+
+			// Check if embedding length matches input length
+			if len(embedding) != len(texts) {
+				mu.Lock()
+				if firstErr == nil {
+					firstErr = fmt.Errorf("embedding count mismatch: expected %d, got %d", len(texts), len(embedding))
+				}
+				mu.Unlock()
+				return
+			}
+
 			mu.Lock()
 			for i, text := range texts {
 				if text == nil {
 					continue
 				}
-				text.results = embedding[i]
+				// Sanitize vector to remove NaN/Inf values
+				sanitized, sanitizeErr := sanitizeVector(embedding[i])
+				if sanitizeErr != nil {
+					// Log warning but continue with sanitized vector
+					text.results = sanitized
+				} else {
+					text.results = embedding[i]
+				}
 			}
 			mu.Unlock()
 		}
@@ -88,8 +134,15 @@ func (e *batchEmbedder) BatchEmbedWithPool(ctx context.Context, model Embedder, 
 		return nil, firstErr
 	}
 
-	results := utils.MapSlice(textEmbeddings, func(text *textEmbedding) []float32 {
-		return text.results
-	})
+	// Sanitize all results and return
+	results := make([][]float32, 0, len(textEmbeddings))
+	for _, text := range textEmbeddings {
+		if text.results != nil {
+			sanitized, _ := sanitizeVector(text.results)
+			results = append(results, sanitized)
+		} else {
+			results = append(results, nil)
+		}
+	}
 	return results, nil
 }

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { UserInfo, TenantInfo, KnowledgeBaseInfo } from '@/api/auth'
 import type { TenantInfo as TenantInfoFromAPI } from '@/api/tenant'
 import i18n from '@/i18n'
+import { useMenuStore } from './menu'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
@@ -15,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   const selectedTenantId = ref<number | null>(null)
   const selectedTenantName = ref<string | null>(null)
   const allTenants = ref<TenantInfoFromAPI[]>([])
+  const isSystemInitialized = ref<boolean>(true)
 
   // 计算属性
   const isLoggedIn = computed(() => {
@@ -37,6 +39,10 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.can_access_all_tenants || false
   })
 
+  const isAdmin = computed(() => {
+    return user.value?.can_access_all_tenants || user.value?.role === 'admin'
+  })
+
   const effectiveTenantId = computed(() => {
     // 如果选择了其他租户，使用选择的租户ID，否则使用用户默认租户ID
     return selectedTenantId.value || (tenant.value?.id ? Number(tenant.value.id) : null)
@@ -47,12 +53,26 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = userData
     // 保存到localStorage
     localStorage.setItem('weknora_user', JSON.stringify(userData))
+    
+    // 更新菜单配置：优先使用用户的menu_config，如果为空则使用租户的作为兜底
+    const menuStore = useMenuStore()
+    const effectiveMenuConfig = (userData.menu_config && userData.menu_config.length > 0) 
+      ? userData.menu_config 
+      : (tenant.value?.menu_config || [])
+    menuStore.setMenuConfig(effectiveMenuConfig, canAccessAllTenants.value, userData.role)
   }
 
   const setTenant = (tenantData: TenantInfo) => {
     tenant.value = tenantData
     // 保存到localStorage
     localStorage.setItem('weknora_tenant', JSON.stringify(tenantData))
+
+    // 更新菜单配置：优先使用用户的menu_config，如果为空则使用租户的作为兜底
+    const menuStore = useMenuStore()
+    const effectiveMenuConfig = (user.value?.menu_config && user.value.menu_config.length > 0) 
+      ? user.value.menu_config 
+      : (tenantData.menu_config || [])
+    menuStore.setMenuConfig(effectiveMenuConfig, canAccessAllTenants.value, user.value?.role)
   }
 
   const setToken = (tokenValue: string) => {
@@ -125,6 +145,9 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('weknora_selected_tenant_id')
     localStorage.removeItem('weknora_selected_tenant_name')
 
+    // 重置菜单
+    const menuStore = useMenuStore()
+    menuStore.clearMenuArr()
   }
 
   const initFromStorage = () => {
@@ -149,6 +172,12 @@ export const useAuthStore = defineStore('auth', () => {
     if (storedTenant) {
       try {
         tenant.value = JSON.parse(storedTenant)
+        // 恢复菜单配置：优先使用用户的menu_config，如果为空则使用租户的作为兜底
+        const menuStore = useMenuStore()
+        const effectiveMenuConfig = (user.value?.menu_config && user.value.menu_config.length > 0) 
+          ? user.value.menu_config 
+          : (tenant.value?.menu_config || [])
+        menuStore.setMenuConfig(effectiveMenuConfig, canAccessAllTenants.value, user.value?.role)
       } catch (e) {
         console.error(i18n.global.t('authStore.errors.parseTenantFailed'), e)
       }
@@ -194,6 +223,32 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const ensureMenuConfig = () => {
+    if (!user.value) return
+    
+    const menuStore = useMenuStore()
+    const effectiveMenuConfig = (user.value.menu_config && user.value.menu_config.length > 0) 
+      ? user.value.menu_config 
+      : (tenant.value?.menu_config || [])
+    menuStore.setMenuConfig(effectiveMenuConfig, canAccessAllTenants.value, user.value.role)
+  }
+
+  const checkInitStatus = async () => {
+    // 如果已经初始化过了，直接返回 true，避免重复请求
+    if (isSystemInitialized.value) {
+      return true
+    }
+    try {
+      const response = await fetch('/api/v1/system/init-status')
+      const data = await response.json()
+      isSystemInitialized.value = data.is_initialized
+      return data.is_initialized
+    } catch (error) {
+      console.error('Failed to check system init status:', error)
+      return true // Default to true to avoid blocking if API fails
+    }
+  }
+
   // 初始化时从localStorage恢复状态
   initFromStorage()
 
@@ -208,6 +263,7 @@ export const useAuthStore = defineStore('auth', () => {
     selectedTenantId,
     selectedTenantName,
     allTenants,
+    isSystemInitialized,
     
     // 计算属性
     isLoggedIn,
@@ -215,6 +271,7 @@ export const useAuthStore = defineStore('auth', () => {
     currentTenantId,
     currentUserId,
     canAccessAllTenants,
+    isAdmin,
     effectiveTenantId,
     
     // 方法
@@ -228,6 +285,8 @@ export const useAuthStore = defineStore('auth', () => {
     setAllTenants,
     getSelectedTenant,
     logout,
-    initFromStorage
+    initFromStorage,
+    ensureMenuConfig,
+    checkInitStatus
   }
 })

@@ -8,9 +8,11 @@ import EmptyKnowledge from '@/components/empty-knowledge.vue';
 import { getSessionsList, createSessions, generateSessionsTitle } from "@/api/chat/index";
 import { useMenuStore } from '@/stores/menu';
 import { useUIStore } from '@/stores/ui';
+import { useAuthStore } from '@/stores/auth';
 import KnowledgeBaseEditorModal from './KnowledgeBaseEditorModal.vue';
 const usemenuStore = useMenuStore();
 const uiStore = useUIStore();
+const authStore = useAuthStore();
 const router = useRouter();
 import {
   batchQueryKnowledge,
@@ -626,6 +628,7 @@ const ensureDocumentKbReady = () => {
 
 
 const handleDocumentUploadClick = () => {
+  if (!authStore.isAdmin) return;
   if (!ensureDocumentKbReady()) return;
   uploadInputRef.value?.click();
 };
@@ -725,6 +728,7 @@ const handleDocumentUpload = async (event: Event) => {
 
 
 const handleManualCreate = () => {
+  if (!authStore.isAdmin) return;
   if (!ensureDocumentKbReady()) return;
   uiStore.openManualEditor({
     mode: 'create',
@@ -740,6 +744,7 @@ const urlInputValue = ref('');
 const urlImporting = ref(false);
 
 const handleURLImportClick = () => {
+  if (!authStore.isAdmin) return;
   if (!ensureDocumentKbReady()) return;
   urlInputValue.value = '';
   urlDialogVisible.value = true;
@@ -967,6 +972,7 @@ async function createNewSession(value: string): Promise<void> {
       </div>
       
       <input
+        v-if="authStore.isAdmin"
         ref="uploadInputRef"
         type="file"
         class="document-upload-input"
@@ -983,6 +989,7 @@ async function createNewSession(value: string): Promise<void> {
             </div>
             <div class="sidebar-actions">
               <t-button
+                v-if="authStore.isAdmin"
                 size="small"
                 variant="text"
                 class="create-tag-btn"
@@ -1083,49 +1090,52 @@ async function createNewSession(value: string): Promise<void> {
                       <span class="tag-name" :title="tag.name">{{ tag.name }}</span>
                     </template>
                   </div>
-                  <div class="tag-list-right">
-                    <span class="tag-count">{{ tag.knowledge_count || 0 }}</span>
-                    <div v-if="editingTagId === tag.id" class="tag-inline-actions" @click.stop>
-                      <t-button
-                        variant="text"
-                        theme="default"
-                        size="small"
-                        class="tag-action-btn confirm"
-                        :loading="editingTagSubmitting"
-                        @click.stop="submitEditTag"
-                      >
-                        <t-icon name="check" size="16px" />
-                      </t-button>
-                      <t-button
-                        variant="text"
-                        theme="default"
-                        size="small"
-                        class="tag-action-btn cancel"
-                        @click.stop="cancelEditTag"
-                      >
-                        <t-icon name="close" size="16px" />
-                      </t-button>
-                    </div>
-                    <div v-else class="tag-more" @click.stop>
-                      <t-popup trigger="click" placement="top-right" overlayClassName="tag-more-popup">
-                        <div class="tag-more-btn">
-                          <t-icon name="more" size="14px" />
-                        </div>
-                        <template #content>
-                          <div class="tag-menu">
-                            <div class="tag-menu-item" @click="startEditTag(tag)">
-                              <t-icon class="menu-icon" name="edit" />
-                              <span>{{ $t('knowledgeBase.tagEditAction') }}</span>
-                            </div>
-                            <div class="tag-menu-item danger" @click="confirmDeleteTag(tag)">
-                              <t-icon class="menu-icon" name="delete" />
-                              <span>{{ $t('knowledgeBase.tagDeleteAction') }}</span>
-                            </div>
+                    <div v-if="authStore.isAdmin" class="tag-list-right">
+                      <span class="tag-count">{{ tag.knowledge_count || 0 }}</span>
+                      <div v-if="editingTagId === tag.id" class="tag-inline-actions" @click.stop>
+                        <t-button
+                          variant="text"
+                          theme="default"
+                          size="small"
+                          class="tag-action-btn confirm"
+                          :loading="editingTagSubmitting"
+                          @click.stop="submitEditTag"
+                        >
+                          <t-icon name="check" size="16px" />
+                        </t-button>
+                        <t-button
+                          variant="text"
+                          theme="default"
+                          size="small"
+                          class="tag-action-btn cancel"
+                          @click.stop="cancelEditTag"
+                        >
+                          <t-icon name="close" size="16px" />
+                        </t-button>
+                      </div>
+                      <div v-else class="tag-more" @click.stop>
+                        <t-popup trigger="click" placement="top-right" overlayClassName="tag-more-popup">
+                          <div class="tag-more-btn">
+                            <t-icon name="more" size="14px" />
                           </div>
-                        </template>
-                      </t-popup>
+                          <template #content>
+                            <div class="tag-menu">
+                              <div class="tag-menu-item" @click="startEditTag(tag)">
+                                <t-icon class="menu-icon" name="edit" />
+                                <span>{{ $t('knowledgeBase.tagEditAction') }}</span>
+                              </div>
+                              <div class="tag-menu-item danger" @click="confirmDeleteTag(tag)">
+                                <t-icon class="menu-icon" name="delete" />
+                                <span>{{ $t('knowledgeBase.tagDeleteAction') }}</span>
+                              </div>
+                            </div>
+                          </template>
+                        </t-popup>
+                      </div>
                     </div>
-                  </div>
+                    <div v-else class="tag-list-right">
+                      <span class="tag-count">{{ tag.knowledge_count || 0 }}</span>
+                    </div>
                 </div>
               </template>
               <div v-else class="tag-empty-state">

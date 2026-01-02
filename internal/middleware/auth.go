@@ -17,10 +17,14 @@ import (
 
 // 无需认证的API列表
 var noAuthAPI = map[string][]string{
-	"/health":               {"GET"},
-	"/api/v1/auth/register": {"POST"},
-	"/api/v1/auth/login":    {"POST"},
-	"/api/v1/auth/refresh":  {"POST"},
+	"/health":                    {"GET"},
+	"/api/v1/auth/register":      {"POST"},
+	"/api/v1/auth/login":         {"POST"},
+	"/api/v1/auth/refresh":       {"POST"},
+	"/api/v1/system/init-status": {"GET"},
+	"/api/v1/system/initialize":  {"POST"},
+	"/system/init-status":        {"GET"},
+	"/system/initialize":         {"POST"},
 }
 
 // 检查请求是否在无需认证的API列表中
@@ -40,20 +44,19 @@ func isNoAuthAPI(path string, method string) bool {
 
 // canAccessTenant checks if a user can access a target tenant
 func canAccessTenant(user *types.User, targetTenantID uint64, cfg *config.Config) bool {
-	// 1. 检查功能是否启用
-	if cfg == nil || cfg.Tenant == nil || !cfg.Tenant.EnableCrossTenantAccess {
-		return false
-	}
-	// 2. 检查用户权限
-	if !user.CanAccessAllTenants {
-		return false
-	}
-	// 3. 如果目标租户是用户自己的租户，允许访问
+	// 1. 如果目标租户是用户自己的租户，允许访问
 	if user.TenantID == targetTenantID {
 		return true
 	}
-	// 4. 用户有跨租户权限，允许访问（具体验证在中间件中完成）
-	return true
+	// 2. 检查用户权限 (超级管理员始终允许跨租户访问)
+	if user.CanAccessAllTenants {
+		return true
+	}
+	// 3. 检查全局跨租户功能是否启用
+	if cfg == nil || cfg.Tenant == nil || !cfg.Tenant.EnableCrossTenantAccess {
+		return false
+	}
+	return false
 }
 
 // Auth 认证中间件

@@ -1,12 +1,15 @@
 package types
 
+import "encoding/json"
+
 const (
-	TypeChunkExtract        = "chunk:extract"
-	TypeDocumentProcess     = "document:process"     // 文档处理任务
-	TypeFAQImport           = "faq:import"           // FAQ导入任务
-	TypeQuestionGeneration  = "question:generation"  // 问题生成任务
-	TypeSummaryGeneration   = "summary:generation"   // 摘要生成任务
-	TypeKBClone             = "kb:clone"             // 知识库复制任务
+	TypeChunkExtract       = "chunk:extract"
+	TypeDocumentProcess    = "document:process"    // 文档处理任务
+	TypeFAQImport          = "faq:import"          // FAQ导入任务
+	TypeQuestionGeneration = "question:generation" // 问题生成任务
+	TypeSummaryGeneration  = "summary:generation"  // 摘要生成任务
+	TypeKBClone            = "kb:clone"            // 知识库复制任务
+	TypeGraphRebuild       = "graph:rebuild"       // 知识图谱批量重建任务
 )
 
 // ExtractChunkPayload represents the extract chunk task payload
@@ -22,11 +25,11 @@ type DocumentProcessPayload struct {
 	TenantID                 uint64   `json:"tenant_id"`
 	KnowledgeID              string   `json:"knowledge_id"`
 	KnowledgeBaseID          string   `json:"knowledge_base_id"`
-	FilePath                 string   `json:"file_path,omitempty"`  // 文件路径（文件导入时使用）
-	FileName                 string   `json:"file_name,omitempty"`  // 文件名（文件导入时使用）
-	FileType                 string   `json:"file_type,omitempty"`  // 文件类型（文件导入时使用）
-	URL                      string   `json:"url,omitempty"`        // URL（URL导入时使用）
-	Passages                 []string `json:"passages,omitempty"`   // 文本段落（文本导入时使用）
+	FilePath                 string   `json:"file_path,omitempty"` // 文件路径（文件导入时使用）
+	FileName                 string   `json:"file_name,omitempty"` // 文件名（文件导入时使用）
+	FileType                 string   `json:"file_type,omitempty"` // 文件类型（文件导入时使用）
+	URL                      string   `json:"url,omitempty"`       // URL（URL导入时使用）
+	Passages                 []string `json:"passages,omitempty"`  // 文本段落（文本导入时使用）
 	EnableMultimodel         bool     `json:"enable_multimodel"`
 	EnableQuestionGeneration bool     `json:"enable_question_generation"` // 是否启用问题生成
 	QuestionCount            int      `json:"question_count,omitempty"`   // 每个chunk生成的问题数量
@@ -65,6 +68,24 @@ type KBClonePayload struct {
 	TargetID string `json:"target_id"`
 }
 
+// GraphRebuildPayload represents the graph rebuild task payload
+type GraphRebuildPayload struct {
+	TenantID        uint64 `json:"tenant_id"`
+	KnowledgeBaseID string `json:"knowledge_base_id"`
+	ModelID         string `json:"model_id"`
+	BatchSize       int    `json:"batch_size,omitempty"` // 批次大小，0表示全量处理
+}
+
+// Marshal marshals the GraphRebuildPayload to JSON bytes
+func (p *GraphRebuildPayload) Marshal() ([]byte, error) {
+	return json.Marshal(p)
+}
+
+// Unmarshal unmarshals JSON bytes to GraphRebuildPayload
+func (p *GraphRebuildPayload) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, p)
+}
+
 // KBCloneTaskStatus represents the status of a knowledge base clone task
 type KBCloneTaskStatus string
 
@@ -92,10 +113,10 @@ type KBCloneProgress struct {
 
 // ChunkContext represents chunk content with surrounding context
 type ChunkContext struct {
-	ChunkID      string `json:"chunk_id"`
-	Content      string `json:"content"`
-	PrevContent  string `json:"prev_content,omitempty"`  // Previous chunk content for context
-	NextContent  string `json:"next_content,omitempty"`  // Next chunk content for context
+	ChunkID     string `json:"chunk_id"`
+	Content     string `json:"content"`
+	PrevContent string `json:"prev_content,omitempty"` // Previous chunk content for context
+	NextContent string `json:"next_content,omitempty"` // Next chunk content for context
 }
 
 // PromptTemplateStructured represents the prompt template structured

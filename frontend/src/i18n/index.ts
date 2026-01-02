@@ -5,8 +5,7 @@ import enUS from './locales/en-US.ts'
 
 const messages = {
   'zh-CN': zhCN,
-  'en-US': enUS,
-  'ru-RU': ruRU
+  'en-US': enUS
 }
 
 // Получаем сохраненный язык из localStorage или используем китайский по умолчанию

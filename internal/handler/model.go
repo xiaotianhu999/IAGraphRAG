@@ -15,17 +15,37 @@ import (
 // ModelHandler handles HTTP requests for model-related operations
 // It implements the necessary methods to create, retrieve, update, and delete models
 type ModelHandler struct {
-	service interfaces.ModelService
+	service     interfaces.ModelService
+	userService interfaces.UserService
 }
 
 // NewModelHandler creates a new instance of ModelHandler
 // It requires a model service implementation that handles business logic
 // Parameters:
 //   - service: An implementation of the ModelService interface
+//   - userService: An implementation of the UserService interface
 //
 // Returns a pointer to the newly created ModelHandler
-func NewModelHandler(service interfaces.ModelService) *ModelHandler {
-	return &ModelHandler{service: service}
+func NewModelHandler(service interfaces.ModelService, userService interfaces.UserService) *ModelHandler {
+	return &ModelHandler{
+		service:     service,
+		userService: userService,
+	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (h *ModelHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // hideSensitiveInfo hides sensitive information (APIKey, BaseURL) for builtin models
@@ -82,6 +102,11 @@ type CreateModelRequest struct {
 // @Router       /models [post]
 func (h *ModelHandler) CreateModel(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 
 	logger.Info(ctx, "Start creating model")
 
@@ -256,6 +281,11 @@ type UpdateModelRequest struct {
 func (h *ModelHandler) UpdateModel(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start updating model")
 
 	id := secutils.SanitizeForLog(c.Param("id"))
@@ -328,6 +358,11 @@ func (h *ModelHandler) UpdateModel(c *gin.Context) {
 // @Router       /models/{id} [delete]
 func (h *ModelHandler) DeleteModel(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 
 	logger.Info(ctx, "Start deleting model")
 

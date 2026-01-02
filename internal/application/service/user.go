@@ -105,14 +105,16 @@ func (s *userService) Register(ctx context.Context, req *types.RegisterRequest) 
 		return nil, errors.New("failed to create workspace")
 	}
 
-	// Create user
+	// Create user with default menu config for normal users
 	user := &types.User{
 		ID:           uuid.New().String(),
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
 		TenantID:     createdTenant.ID,
+		Role:         types.RoleUser,
 		IsActive:     true,
+		MenuConfig:   types.UserMenuConfig{"creatChat"}, // Default: only AI chat for normal users
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
@@ -217,6 +219,39 @@ func (s *userService) GetUserByUsername(ctx context.Context, username string) (*
 func (s *userService) UpdateUser(ctx context.Context, user *types.User) error {
 	user.UpdatedAt = time.Now()
 	return s.userRepo.UpdateUser(ctx, user)
+}
+
+// UpdateUserFields updates specific user fields using a map
+func (s *userService) UpdateUserFields(ctx context.Context, userID string, updates map[string]interface{}) error {
+	updates["updated_at"] = time.Now()
+	return s.userRepo.UpdateUserFields(ctx, userID, updates)
+}
+
+// CreateUser creates a new user (for super admin)
+func (s *userService) CreateUser(ctx context.Context, user *types.User, password string) error {
+	// Check if user already exists
+	existingUser, _ := s.userRepo.GetUserByEmail(ctx, user.Email)
+	if existingUser != nil {
+		return errors.New("user with this email already exists")
+	}
+
+	existingUser, _ = s.userRepo.GetUserByUsername(ctx, user.Username)
+	if existingUser != nil {
+		return errors.New("user with this username already exists")
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("failed to process password")
+	}
+
+	user.ID = uuid.New().String()
+	user.PasswordHash = string(hashedPassword)
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+
+	return s.userRepo.CreateUser(ctx, user)
 }
 
 // DeleteUser deletes a user
@@ -425,4 +460,16 @@ func (s *userService) GetCurrentUser(ctx context.Context) (*types.User, error) {
 	}
 
 	return user, nil
+}
+
+// ListUsers lists all users (for super admin)
+func (s *userService) ListUsers(ctx context.Context, tenantID uint64, page, pageSize int) ([]*types.User, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	return s.userRepo.ListUsers(ctx, tenantID, page, pageSize)
 }

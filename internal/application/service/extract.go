@@ -98,8 +98,12 @@ func (s *ChunkExtractService) Extract(ctx context.Context, t *asynq.Task) error 
 		return err
 	}
 	if kb.ExtractConfig == nil {
-		logger.Warnf(ctx, "failed to get extract config")
+		logger.Warnf(ctx, "knowledge base has no extract config")
 		return err
+	}
+	if !kb.ExtractConfig.Enabled {
+		logger.Warnf(ctx, "knowledge base extract config is disabled")
+		return nil
 	}
 
 	chatModel, err := s.modelService.GetChatModel(ctx, p.ModelID)
@@ -108,17 +112,37 @@ func (s *ChunkExtractService) Extract(ctx context.Context, t *asynq.Task) error 
 		return err
 	}
 
+	// Merge knowledge base config with default config from config.yaml
+	// Priority: KB config > default config
 	template := &types.PromptTemplateStructured{
-		Description: s.template.Description,
+		Description: s.template.Description, // Always use description from config.yaml
 		Tags:        kb.ExtractConfig.Tags,
-		Examples: []types.GraphData{
+		Examples:    make([]types.GraphData, 0),
+	}
+
+	// Use default tags if KB config has no tags
+	if len(template.Tags) == 0 {
+		template.Tags = s.template.Tags
+		logger.Debugf(ctx, "Using default tags from config.yaml: %d tags", len(template.Tags))
+	}
+
+	// Build example from KB config or use default examples
+	if kb.ExtractConfig.Text != "" || len(kb.ExtractConfig.Nodes) > 0 || len(kb.ExtractConfig.Relations) > 0 {
+		// KB has custom example configuration
+		template.Examples = []types.GraphData{
 			{
 				Text:     kb.ExtractConfig.Text,
 				Node:     kb.ExtractConfig.Nodes,
 				Relation: kb.ExtractConfig.Relations,
 			},
-		},
+		}
+		logger.Debugf(ctx, "Using custom example from knowledge base config")
+	} else if len(s.template.Examples) > 0 {
+		// Use default examples from config.yaml
+		template.Examples = s.template.Examples
+		logger.Debugf(ctx, "Using default examples from config.yaml: %d examples", len(template.Examples))
 	}
+
 	extractor := chatpipline.NewExtractor(chatModel, template)
 	graph, err := extractor.Extract(ctx, chunk.Content)
 	if err != nil {

@@ -1,12 +1,16 @@
 package ollama
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -333,8 +337,146 @@ func (s *OllamaService) Embeddings(ctx context.Context, req *api.EmbedRequest) (
 	if err := s.StartService(ctx); err != nil {
 		return nil, err
 	}
-	// Use official client Embed method
-	return s.client.Embed(ctx, req)
+
+	// Use custom embedding call to handle NaN values
+	resp, err := s.embedWithNaNHandling(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// embedWithNaNHandling calls the Ollama API with custom NaN handling
+func (s *OllamaService) embedWithNaNHandling(ctx context.Context, req *api.EmbedRequest) (*api.EmbedResponse, error) {
+	// Build request URL
+	embedURL := fmt.Sprintf("%s/api/embed", s.baseURL)
+
+	// Marshal request
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal embed request: %w", err)
+	}
+
+	// Create HTTP request
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", embedURL, bytes.NewReader(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	httpResp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send embed request: %w", err)
+	}
+	defer httpResp.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check if response contains an error from Ollama server
+	var errorResp struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(respBody, &errorResp); err == nil && errorResp.Error != "" {
+		logger.GetLogger(ctx).Errorf("Ollama API returned error: %s", errorResp.Error)
+
+		// If error mentions NaN or JSON encoding, it means Ollama itself failed to serialize the response
+		// This typically happens when the model generates NaN values
+		if strings.Contains(errorResp.Error, "json: unsupported value") ||
+			strings.Contains(errorResp.Error, "NaN") ||
+			strings.Contains(errorResp.Error, "Inf") {
+			logger.GetLogger(ctx).Warn("Ollama model generated invalid values (NaN/Inf). Consider restarting Ollama service or using a different model.")
+			return nil, fmt.Errorf("ollama model generated invalid values: %s", errorResp.Error)
+		}
+
+		return nil, fmt.Errorf("ollama API error: %s", errorResp.Error)
+	}
+
+	// Replace NaN and Inf values in JSON response
+	cleanedBody := cleanJSONNumbers(respBody)
+
+	// Unmarshal cleaned response
+	var embedResp api.EmbedResponse
+	if err := json.Unmarshal(cleanedBody, &embedResp); err != nil {
+		logger.GetLogger(ctx).Errorf("Failed to unmarshal response (even after cleaning): %v, body: %s", err, string(cleanedBody[:min(500, len(cleanedBody))]))
+		return nil, fmt.Errorf("failed to unmarshal embed response: %w", err)
+	}
+
+	// Validate response
+	if len(embedResp.Embeddings) == 0 {
+		// Get input count safely
+		inputCount := 0
+		if inputs, ok := req.Input.([]string); ok {
+			inputCount = len(inputs)
+		}
+		logger.GetLogger(ctx).Errorf("Received empty embeddings from Ollama API, request had %d inputs, response body: %s",
+			inputCount, string(cleanedBody[:min(200, len(cleanedBody))]))
+		return nil, fmt.Errorf("received empty embeddings from Ollama API")
+	}
+
+	// Check if embeddings count matches input count (if we can determine it)
+	if inputs, ok := req.Input.([]string); ok {
+		if len(embedResp.Embeddings) != len(inputs) {
+			logger.GetLogger(ctx).Warnf("Embeddings count mismatch: expected %d, got %d", len(inputs), len(embedResp.Embeddings))
+		}
+	}
+
+	// Additional sanitization: clean embeddings in-place
+	for i := range embedResp.Embeddings {
+		embedResp.Embeddings[i] = sanitizeEmbedding(embedResp.Embeddings[i])
+	}
+
+	return &embedResp, nil
+}
+
+// cleanJSONNumbers replaces NaN and Infinity values in JSON with 0
+func cleanJSONNumbers(data []byte) []byte {
+	// Replace NaN with 0.0
+	nanRegex := regexp.MustCompile(`:\s*NaN\b`)
+	data = nanRegex.ReplaceAll(data, []byte(": 0.0"))
+
+	// Replace Infinity with a large number
+	infRegex := regexp.MustCompile(`:\s*Infinity\b`)
+	data = infRegex.ReplaceAll(data, []byte(": 1e308"))
+
+	// Replace -Infinity with a large negative number
+	negInfRegex := regexp.MustCompile(`:\s*-Infinity\b`)
+	data = negInfRegex.ReplaceAll(data, []byte(": -1e308"))
+
+	return data
+}
+
+// sanitizeEmbedding removes NaN and Inf values from an embedding vector
+func sanitizeEmbedding(embedding []float32) []float32 {
+	sanitized := make([]float32, len(embedding))
+	hasInvalid := false
+
+	for i, v := range embedding {
+		if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+			sanitized[i] = 0.0
+			hasInvalid = true
+		} else {
+			sanitized[i] = v
+		}
+	}
+
+	if hasInvalid {
+		logger.GetLogger(context.Background()).Warn("Embedding vector contained NaN/Inf values, replaced with 0.0")
+	}
+
+	return sanitized
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // Generate generates text (used for Rerank)

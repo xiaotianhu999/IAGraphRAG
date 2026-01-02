@@ -14,12 +14,31 @@ import (
 
 // TagHandler handles knowledge base tag operations.
 type TagHandler struct {
-	tagService interfaces.KnowledgeTagService
+	tagService  interfaces.KnowledgeTagService
+	userService interfaces.UserService
 }
 
 // NewTagHandler creates a new TagHandler.
-func NewTagHandler(tagService interfaces.KnowledgeTagService) *TagHandler {
-	return &TagHandler{tagService: tagService}
+func NewTagHandler(tagService interfaces.KnowledgeTagService, userService interfaces.UserService) *TagHandler {
+	return &TagHandler{
+		tagService:  tagService,
+		userService: userService,
+	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (h *TagHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // ListTags godoc
@@ -39,6 +58,10 @@ func NewTagHandler(tagService interfaces.KnowledgeTagService) *TagHandler {
 // @Router       /knowledge-bases/{id}/tags [get]
 func (h *TagHandler) ListTags(c *gin.Context) {
 	ctx := c.Request.Context()
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 	kbID := secutils.SanitizeForLog(c.Param("id"))
 
 	var page types.Pagination
@@ -84,6 +107,12 @@ type createTagRequest struct {
 // @Router       /knowledge-bases/{id}/tags [post]
 func (h *TagHandler) CreateTag(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	kbID := secutils.SanitizeForLog(c.Param("id"))
 
 	var req createTagRequest
@@ -172,6 +201,12 @@ func (h *TagHandler) UpdateTag(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/tags/{tag_id} [delete]
 func (h *TagHandler) DeleteTag(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	tagID := secutils.SanitizeForLog(c.Param("tag_id"))
 
 	force := c.Query("force") == "true"

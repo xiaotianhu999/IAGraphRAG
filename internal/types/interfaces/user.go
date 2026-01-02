@@ -20,6 +20,10 @@ type UserService interface {
 	GetUserByUsername(ctx context.Context, username string) (*types.User, error)
 	// UpdateUser updates user information
 	UpdateUser(ctx context.Context, user *types.User) error
+	// UpdateUserFields updates specific user fields using a map
+	UpdateUserFields(ctx context.Context, userID string, updates map[string]interface{}) error
+	// CreateUser creates a new user (for super admin)
+	CreateUser(ctx context.Context, user *types.User, password string) error
 	// DeleteUser deletes a user
 	DeleteUser(ctx context.Context, id string) error
 	// ChangePassword changes user password
@@ -36,6 +40,8 @@ type UserService interface {
 	RevokeToken(ctx context.Context, token string) error
 	// GetCurrentUser gets current user from context
 	GetCurrentUser(ctx context.Context) (*types.User, error)
+	// ListUsers lists all users (for super admin)
+	ListUsers(ctx context.Context, tenantID uint64, page, pageSize int) ([]*types.User, int64, error)
 }
 
 // UserRepository defines the user repository interface
@@ -50,10 +56,12 @@ type UserRepository interface {
 	GetUserByUsername(ctx context.Context, username string) (*types.User, error)
 	// UpdateUser updates a user
 	UpdateUser(ctx context.Context, user *types.User) error
+	// UpdateUserFields updates specific user fields using a map
+	UpdateUserFields(ctx context.Context, userID string, updates map[string]interface{}) error
 	// DeleteUser deletes a user
 	DeleteUser(ctx context.Context, id string) error
-	// ListUsers lists users with pagination
-	ListUsers(ctx context.Context, offset, limit int) ([]*types.User, error)
+	// ListUsers lists users with pagination and filters
+	ListUsers(ctx context.Context, tenantID uint64, page, pageSize int) ([]*types.User, int64, error)
 }
 
 // AuthTokenRepository defines the auth token repository interface

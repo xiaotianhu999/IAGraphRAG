@@ -69,7 +69,9 @@ func (v *KeywordsVectorHybridRetrieveEngineService) BatchIndex(ctx context.Conte
 	if slices.Contains(retrieverTypes, types.VectorRetrieverType) {
 		var contentList []string
 		for _, indexInfo := range indexInfoList {
-			contentList = append(contentList, indexInfo.Content)
+			// Preprocess text before embedding to prevent NaN values
+			cleanedContent := embedding.PreprocessTextForEmbedding(indexInfo.Content)
+			contentList = append(contentList, cleanedContent)
 		}
 		var embeddings [][]float32
 		var err error

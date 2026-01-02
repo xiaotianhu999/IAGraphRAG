@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Tencent/WeKnora/internal/application/service/retriever"
+	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/models/embedding"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -21,6 +22,7 @@ var ErrInvalidTenantID = errors.New("invalid tenant ID")
 
 // knowledgeBaseService implements the knowledge base service interface
 type knowledgeBaseService struct {
+	config         *config.Config
 	repo           interfaces.KnowledgeBaseRepository
 	kgRepo         interfaces.KnowledgeRepository
 	chunkRepo      interfaces.ChunkRepository
@@ -32,7 +34,9 @@ type knowledgeBaseService struct {
 }
 
 // NewKnowledgeBaseService creates a new knowledge base service
-func NewKnowledgeBaseService(repo interfaces.KnowledgeBaseRepository,
+func NewKnowledgeBaseService(
+	config *config.Config,
+	repo interfaces.KnowledgeBaseRepository,
 	kgRepo interfaces.KnowledgeRepository,
 	chunkRepo interfaces.ChunkRepository,
 	modelService interfaces.ModelService,
@@ -42,6 +46,7 @@ func NewKnowledgeBaseService(repo interfaces.KnowledgeBaseRepository,
 	graphEngine interfaces.RetrieveGraphRepository,
 ) interfaces.KnowledgeBaseService {
 	return &knowledgeBaseService{
+		config:         config,
 		repo:           repo,
 		kgRepo:         kgRepo,
 		chunkRepo:      chunkRepo,
@@ -76,6 +81,33 @@ func (s *knowledgeBaseService) CreateKnowledgeBase(ctx context.Context,
 	kb.UpdatedAt = time.Now()
 	kb.EnsureDefaults()
 
+	// 填充分块配置默认值（从 config.yaml）
+	defaultChunkingConfig := &types.ChunkingConfig{
+		ChunkSize:    s.config.KnowledgeBase.ChunkSize,
+		ChunkOverlap: s.config.KnowledgeBase.ChunkOverlap,
+		Separators:   s.config.KnowledgeBase.SplitMarkers,
+	}
+	kb.EnsureChunkingDefaults(defaultChunkingConfig)
+
+	// 填充 VLM 配置默认值
+	if s.config.KnowledgeBase.VLM != nil {
+		kb.EnsureVLMDefaults(s.config.KnowledgeBase.VLM.Enabled, s.config.KnowledgeBase.VLM.ModelID)
+	}
+
+	// 填充模型配置默认值
+	kb.EnsureModelDefaults(
+		s.config.KnowledgeBase.DefaultEmbeddingModelID,
+		s.config.KnowledgeBase.DefaultSummaryModelID,
+	)
+
+	// 填充问题生成配置默认值
+	if s.config.KnowledgeBase.QuestionGeneration != nil {
+		kb.EnsureQuestionGenerationDefaults(
+			s.config.KnowledgeBase.QuestionGeneration.Enabled,
+			s.config.KnowledgeBase.QuestionGeneration.QuestionCount,
+		)
+	}
+
 	logger.Infof(ctx, "Creating knowledge base, ID: %s, tenant ID: %d, name: %s", kb.ID, kb.TenantID, kb.Name)
 
 	if err := s.repo.CreateKnowledgeBase(ctx, kb); err != nil {
@@ -106,6 +138,34 @@ func (s *knowledgeBaseService) GetKnowledgeBaseByID(ctx context.Context, id stri
 	}
 
 	kb.EnsureDefaults()
+
+	// 填充分块配置默认值（从 config.yaml）
+	defaultChunkingConfig := &types.ChunkingConfig{
+		ChunkSize:    s.config.KnowledgeBase.ChunkSize,
+		ChunkOverlap: s.config.KnowledgeBase.ChunkOverlap,
+		Separators:   s.config.KnowledgeBase.SplitMarkers,
+	}
+	kb.EnsureChunkingDefaults(defaultChunkingConfig)
+
+	// 填充 VLM 配置默认值
+	if s.config.KnowledgeBase.VLM != nil {
+		kb.EnsureVLMDefaults(s.config.KnowledgeBase.VLM.Enabled, s.config.KnowledgeBase.VLM.ModelID)
+	}
+
+	// 填充模型配置默认值
+	kb.EnsureModelDefaults(
+		s.config.KnowledgeBase.DefaultEmbeddingModelID,
+		s.config.KnowledgeBase.DefaultSummaryModelID,
+	)
+
+	// 填充问题生成配置默认值
+	if s.config.KnowledgeBase.QuestionGeneration != nil {
+		kb.EnsureQuestionGenerationDefaults(
+			s.config.KnowledgeBase.QuestionGeneration.Enabled,
+			s.config.KnowledgeBase.QuestionGeneration.QuestionCount,
+		)
+	}
+
 	return kb, nil
 }
 
@@ -125,9 +185,36 @@ func (s *knowledgeBaseService) ListKnowledgeBases(ctx context.Context) ([]*types
 		return nil, err
 	}
 
+	// 准备默认配置
+	defaultChunkingConfig := &types.ChunkingConfig{
+		ChunkSize:    s.config.KnowledgeBase.ChunkSize,
+		ChunkOverlap: s.config.KnowledgeBase.ChunkOverlap,
+		Separators:   s.config.KnowledgeBase.SplitMarkers,
+	}
+
 	// Query knowledge count and chunk count for each knowledge base
 	for _, kb := range kbs {
 		kb.EnsureDefaults()
+		kb.EnsureChunkingDefaults(defaultChunkingConfig)
+
+		// 填充 VLM 配置默认值
+		if s.config.KnowledgeBase.VLM != nil {
+			kb.EnsureVLMDefaults(s.config.KnowledgeBase.VLM.Enabled, s.config.KnowledgeBase.VLM.ModelID)
+		}
+
+		// 填充模型配置默认值
+		kb.EnsureModelDefaults(
+			s.config.KnowledgeBase.DefaultEmbeddingModelID,
+			s.config.KnowledgeBase.DefaultSummaryModelID,
+		)
+
+		// 填充问题生成配置默认值
+		if s.config.KnowledgeBase.QuestionGeneration != nil {
+			kb.EnsureQuestionGenerationDefaults(
+				s.config.KnowledgeBase.QuestionGeneration.Enabled,
+				s.config.KnowledgeBase.QuestionGeneration.QuestionCount,
+			)
+		}
 
 		// Get knowledge count
 		switch kb.Type {

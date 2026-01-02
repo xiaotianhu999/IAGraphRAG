@@ -96,6 +96,11 @@ export function getKnowledgeDetailsCon(id: string, page: number) {
   return get(`/api/v1/chunks/${id}?page=${page}&page_size=25`);
 }
 
+// Get chunk list by knowledge_id with pagination
+export function getKnowledgeChunks(knowledgeId: string, params: { page: number; page_size: number }) {
+  return get(`/api/v1/chunks/${knowledgeId}?page=${params.page}&page_size=${params.page_size}`);
+}
+
 // Get chunk by chunk_id only (new endpoint - to be added to backend)
 export function getChunkByIdOnly(chunkId: string) {
   return get(`/api/v1/chunks/by-id/${chunkId}`);

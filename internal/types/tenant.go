@@ -77,6 +77,8 @@ type Tenant struct {
 	WebSearchConfig *WebSearchConfig `yaml:"web_search_config"   json:"web_search_config"   gorm:"type:jsonb"`
 	// Global Conversation configuration for this tenant (default for normal mode sessions)
 	ConversationConfig *ConversationConfig `yaml:"conversation_config" json:"conversation_config" gorm:"type:jsonb"`
+	// Menu configuration for this tenant
+	MenuConfig MenuConfig `yaml:"menu_config" json:"menu_config" gorm:"type:json"`
 	// Creation time
 	CreatedAt time.Time `yaml:"created_at"          json:"created_at"`
 	// Last updated time
@@ -178,4 +180,27 @@ func (c *ConversationConfig) Scan(value interface{}) error {
 		return nil
 	}
 	return json.Unmarshal(b, c)
+}
+
+// MenuConfig represents the menu configuration for a tenant
+type MenuConfig []string
+
+// Value implements the driver.Valuer interface
+func (m MenuConfig) Value() (driver.Value, error) {
+	if len(m) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(m)
+}
+
+// Scan implements the sql.Scanner interface
+func (m *MenuConfig) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	b, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	return json.Unmarshal(b, m)
 }

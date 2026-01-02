@@ -592,39 +592,39 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--td-component-border);
   border-radius: 6px;
-  background: #fafafa;
+  background: var(--td-bg-color-container);
   transition: all 0.15s ease;
   position: relative;
   overflow: visible;
 
   &:hover {
-    border-color: #07C05F;
-    background: #f9fdfb;
-    box-shadow: 0 1px 4px rgba(7, 192, 95, 0.08);
+    border-color: var(--td-brand-color);
+    background: var(--td-brand-color-light);
+    box-shadow: var(--td-shadow-1);
   }
 
   // 内置模型样式
   &.builtin-model {
-    background: #f8f9fa;
-    border-color: #d9d9d9;
+    background: var(--td-bg-color-page);
+    border-color: var(--td-component-border);
 
     &:hover {
-      border-color: #c0c0c0;
-      background: #f5f6f7;
+      border-color: var(--td-gray-color-6);
+      background: var(--td-bg-color-container-hover);
       box-shadow: none;
     }
 
     .model-info {
       .model-name {
-        color: #666666;
+        color: var(--td-text-color-secondary);
       }
 
       .model-meta {
         .source-tag {
-          background: #e5e5e5;
-          color: #999999;
+          background: var(--td-bg-color-component);
+          color: var(--td-text-color-placeholder);
         }
       }
     }
@@ -638,7 +638,7 @@ onMounted(() => {
   .model-name {
     font-size: 14px;
     font-weight: 500;
-    color: #333333;
+    color: var(--td-text-color-primary);
     margin-bottom: 6px;
     display: flex;
     align-items: center;

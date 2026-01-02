@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"time"
 
@@ -176,10 +177,24 @@ func (e *OpenAIEmbedder) BatchEmbed(ctx context.Context, texts []string) ([][]fl
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 
-	// Extract embedding vectors
+	// Extract embedding vectors and sanitize them
 	embeddings := make([][]float32, 0, len(response.Data))
 	for _, data := range response.Data {
-		embeddings = append(embeddings, data.Embedding)
+		// Check and replace NaN/Inf values
+		sanitized := make([]float32, len(data.Embedding))
+		hasInvalid := false
+		for i, v := range data.Embedding {
+			if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+				sanitized[i] = 0.0
+				hasInvalid = true
+			} else {
+				sanitized[i] = v
+			}
+		}
+		if hasInvalid {
+			logger.GetLogger(ctx).Warnf("OpenAIEmbedder: Vector contains NaN/Inf values, replaced with 0.0")
+		}
+		embeddings = append(embeddings, sanitized)
 	}
 
 	return embeddings, nil

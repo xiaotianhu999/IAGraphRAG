@@ -126,9 +126,12 @@ func (r *chunkRepository) ListPagedChunksByKnowledgeID(
 	// Then query the paginated data
 	dataQuery := baseFilter(r.db.WithContext(ctx))
 
-	// Default is time descending, "asc" for time ascending
-	orderClause := "updated_at DESC"
-	if sortOrder == "asc" {
+	// Default is chunk_index ascending (original document order)
+	// "time_desc" for time descending, "time_asc" for time ascending
+	orderClause := "chunk_index ASC"
+	if sortOrder == "time_desc" {
+		orderClause = "updated_at DESC"
+	} else if sortOrder == "time_asc" {
 		orderClause = "updated_at ASC"
 	}
 

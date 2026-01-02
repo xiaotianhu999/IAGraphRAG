@@ -3,12 +3,7 @@ package types
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/yanyiwu/gojieba"
 )
-
-// Jieba is a global instance of Chinese text segmentation tool
-var Jieba *gojieba.Jieba = gojieba.NewJieba()
 
 // EvaluationStatue represents the status of an evaluation task
 type EvaluationStatue int

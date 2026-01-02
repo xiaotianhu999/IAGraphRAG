@@ -1,7 +1,7 @@
 <template>
     <div class="aside_box">
         <div class="logo_box" @click="router.push('/platform/knowledge-bases')" style="cursor: pointer;">
-            <img class="logo" src="@/assets/img/weknora.png" alt="">
+            <img class="logo" src="@/assets/img/logo.png" alt="">
         </div>
         
         <!-- 租户选择器：仅在用户可切换租户时显示 -->
@@ -290,7 +290,7 @@ const getIconActiveState = (itemPath: string) => {
 // 分离上下两部分菜单
 const topMenuItems = computed<MenuItem[]>(() => {
     return (menuArr.value as unknown as MenuItem[]).filter((item: MenuItem) => 
-        item.path === 'knowledge-bases' || item.path === 'creatChat'
+        item.path === 'knowledge-bases' || item.path === 'creatChat' || item.path.startsWith('admin/')
     );
 });
 
@@ -330,7 +330,25 @@ const showKbActions = computed(() =>
 const currentKbType = computed(() => currentKbInfo.value?.type || 'document')
 const showDocActions = computed(() => showKbActions.value && isInKnowledgeBase.value && currentKbType.value !== 'faq')
 const showFaqActions = computed(() => showKbActions.value && isInKnowledgeBase.value && currentKbType.value === 'faq')
-const showCreateKbAction = computed(() => showKbActions.value && (isInKnowledgeBaseList.value || isInCreatChat.value || isInChatDetail.value))
+
+// 检查用户是否有知识库管理权限
+const hasKnowledgeBasePermission = computed(() => {
+  const user = authStore.user
+  if (!user) return false
+  
+  // 超级管理员和租户管理员拥有所有权限
+  if (authStore.canAccessAllTenants || user.role === 'admin') return true
+  
+  // 普通用户检查 menu_config
+  const menuConfig = user.menu_config || []
+  return menuConfig.includes('knowledge-bases')
+})
+
+const showCreateKbAction = computed(() => 
+  showKbActions.value && 
+  (isInKnowledgeBaseList.value || isInCreatChat.value || isInChatDetail.value) && 
+  hasKnowledgeBasePermission.value
+)
 
 // 时间分组函数
 const getTimeCategory = (dateStr: string): string => {
@@ -1243,7 +1261,7 @@ const handleCreateKnowledgeBase = () => {
 .aside_box {
     min-width: 260px;
     padding: 8px;
-    background: #fff;
+    background: var(--td-bg-color-container);
     box-sizing: border-box;
     height: 100vh;
     overflow: hidden;
@@ -1270,7 +1288,7 @@ const handleCreateKnowledgeBase = () => {
 
     .logo_txt {
         transform: rotate(0.049deg);
-        color: #000000;
+        color: var(--td-text-color-primary);
         font-family: "TencentSans";
         font-size: 24.12px;
         font-style: normal;
@@ -1293,17 +1311,17 @@ const handleCreateKnowledgeBase = () => {
     }
 
     .kb-action-wrapper {
-        border: 1px solid #e7e9eb;
+        border: 1px solid var(--td-component-border);
         border-radius: 8px;
         padding: 8px;
         margin-bottom: 12px;
-        background: #fafcfc;
+        background: var(--td-bg-color-page);
     }
 
     .kb-action-label {
         font-size: 11px;
         font-weight: 600;
-        color: #8b9196;
+        color: var(--td-text-color-secondary);
         margin-bottom: 6px;
         padding: 0 4px;
         text-transform: uppercase;
@@ -1317,9 +1335,9 @@ const handleCreateKnowledgeBase = () => {
     }
 
     .kb-action-item {
-        background: #fff;
+        background: var(--td-bg-color-container);
         border-radius: 6px;
-        border: 1px solid #eef1f2;
+        border: 1px solid var(--td-component-border);
         transition: background-color 0.08s ease, border-color 0.08s ease;
         display: flex;
         align-items: center;
@@ -1328,20 +1346,20 @@ const handleCreateKnowledgeBase = () => {
         cursor: pointer;
 
         &:hover {
-            background: #f0fdf6;
-            border-color: #10b981;
+            background: var(--td-brand-color-light);
+            border-color: var(--td-brand-color);
 
             .kb-action-icon {
-                color: #059669;
+                color: var(--td-brand-color-focus);
             }
 
             .kb-action-title {
-                color: #10b981;
+                color: var(--td-brand-color);
             }
         }
 
         &:active {
-            background: #e6f9f0;
+            background: var(--td-brand-color-active);
         }
     }
 
@@ -1660,10 +1678,10 @@ const handleCreateKnowledgeBase = () => {
     top: 100%;
     left: 0;
     right: 0;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--td-bg-color-container);
+    border: 1px solid var(--td-component-border);
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--td-shadow-1);
     z-index: 1000;
     max-height: 200px;
     overflow-y: auto;
@@ -1674,15 +1692,15 @@ const handleCreateKnowledgeBase = () => {
     cursor: pointer;
     transition: background-color 0.2s ease;
     font-size: 14px;
-    color: #333;
+    color: var(--td-text-color-primary);
     
     &:hover {
-        background-color: #f5f5f5;
+        background-color: var(--td-bg-color-container-hover);
     }
     
     &.active {
-        background-color: #07c05f1a;
-        color: #07c05f;
+        background-color: var(--td-brand-color-light);
+        color: var(--td-brand-color);
         font-weight: 500;
     }
     
@@ -1730,10 +1748,10 @@ const handleCreateKnowledgeBase = () => {
 .t-popup[data-popper-placement^="right"] {
     .t-popup__content {
         .t-dropdown__menu {
-            background: #ffffff !important;
-            border: 1px solid #e5e7eb !important;
+            background: var(--td-bg-color-container) !important;
+            border: 1px solid var(--td-component-border) !important;
             border-radius: 6px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: var(--td-shadow-1) !important;
             padding: 4px !important;
             min-width: 100px !important;
         }
@@ -1744,15 +1762,15 @@ const handleCreateKnowledgeBase = () => {
             margin: 2px 0 !important;
             transition: all 0.2s ease !important;
             font-size: 14px !important;
-            color: #333333 !important;
+            color: var(--td-text-color-primary) !important;
             min-width: auto !important;
             max-width: none !important;
             width: auto !important;
             cursor: pointer !important;
 
             &:hover {
-                background: #f5f7fa !important;
-                color: #07c05f !important;
+                background: var(--td-bg-color-container-hover) !important;
+                color: var(--td-brand-color) !important;
             }
 
             .t-dropdown__item-text {

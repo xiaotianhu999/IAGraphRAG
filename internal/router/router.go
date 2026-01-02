@@ -47,6 +47,10 @@ type RouterParams struct {
 	WebSearchHandler      *handler.WebSearchHandler
 	FAQHandler            *handler.FAQHandler
 	TagHandler            *handler.TagHandler
+	UserHandler           *handler.UserHandler
+	AuditLogHandler       *handler.AuditLogHandler
+	DashboardHandler      *handler.DashboardHandler
+	SystemInitHandler     *handler.SystemInitializationHandler
 }
 
 // NewRouter 创建新的路由
@@ -57,7 +61,7 @@ func NewRouter(params RouterParams) *gin.Engine {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-API-Key", "X-Request-ID"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-API-Key", "X-Request-ID", "X-Tenant-ID"},
 		ExposeHeaders:    []string{"Content-Length", "Access-Control-Allow-Origin"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -95,7 +99,11 @@ func NewRouter(params RouterParams) *gin.Engine {
 	v1 := r.Group("/api/v1")
 	{
 		RegisterAuthRoutes(v1, params.AuthHandler)
+		RegisterUserRoutes(v1, params.UserHandler)
 		RegisterTenantRoutes(v1, params.TenantHandler)
+		RegisterAuditLogRoutes(v1, params.AuditLogHandler)
+		RegisterDashboardRoutes(v1, params.DashboardHandler)
+		RegisterSystemInitRoutes(v1, params.SystemInitHandler)
 		RegisterKnowledgeBaseRoutes(v1, params.KBHandler)
 		RegisterKnowledgeTagRoutes(v1, params.TagHandler)
 		RegisterKnowledgeRoutes(v1, params.KnowledgeHandler)
@@ -221,6 +229,8 @@ func RegisterKnowledgeBaseRoutes(r *gin.RouterGroup, handler *handler.KnowledgeB
 		kb.POST("/copy", handler.CopyKnowledgeBase)
 		// 获取知识库复制进度
 		kb.GET("/copy/progress/:task_id", handler.GetKBCloneProgress)
+		// 批量重建知识图谱
+		kb.POST("/:id/rebuild-graph", handler.RebuildGraph)
 	}
 }
 
@@ -408,5 +418,39 @@ func RegisterWebSearchRoutes(r *gin.RouterGroup, webSearchHandler *handler.WebSe
 	{
 		// Get available providers
 		webSearch.GET("/providers", webSearchHandler.GetProviders)
+	}
+}
+
+// RegisterUserRoutes registers user management routes
+func RegisterUserRoutes(r *gin.RouterGroup, handler *handler.UserHandler) {
+	users := r.Group("/users")
+	{
+		users.GET("", handler.ListUsers)
+		users.POST("", handler.CreateUser)
+		users.PUT("/:id", handler.UpdateUser)
+		users.PUT("/:id/status", handler.UpdateUserStatus)
+		users.DELETE("/:id", handler.DeleteUser)
+	}
+}
+
+func RegisterAuditLogRoutes(r *gin.RouterGroup, handler *handler.AuditLogHandler) {
+	logs := r.Group("/audit-logs")
+	{
+		logs.GET("", handler.GetLogs)
+	}
+}
+
+func RegisterDashboardRoutes(r *gin.RouterGroup, handler *handler.DashboardHandler) {
+	dashboard := r.Group("/dashboard")
+	{
+		dashboard.GET("", handler.GetDashboardData)
+	}
+}
+
+func RegisterSystemInitRoutes(r *gin.RouterGroup, handler *handler.SystemInitializationHandler) {
+	system := r.Group("/system")
+	{
+		system.GET("/init-status", handler.GetInitStatus)
+		system.POST("/initialize", handler.Initialize)
 	}
 }

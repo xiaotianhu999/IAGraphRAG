@@ -16,46 +16,48 @@
     <!-- 下拉菜单 -->
     <Transition name="dropdown">
       <div v-if="menuVisible" class="user-dropdown" @click.stop>
-        <div class="menu-item" @click="handleQuickNav('models')">
-          <t-icon name="control-platform" class="menu-icon" />
-          <span>{{ $t('settings.modelManagement') }}</span>
-        </div>
-        <div class="menu-item" @click="handleQuickNav('ollama')">
-          <t-icon name="server" class="menu-icon" />
-          <span>Ollama</span>
-        </div>
-        <div class="menu-item" @click="handleQuickNav('agent')">
-          <t-icon name="chat" class="menu-icon" />
-          <span>{{ $t('settings.conversationStrategy') }}</span>
-        </div>
-        <div class="menu-item" @click="handleQuickNav('websearch')">
-          <svg 
-            width="16" 
-            height="16" 
-            viewBox="0 0 18 18" 
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            class="menu-icon svg-icon"
-          >
-            <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/>
-            <path d="M 9 2 A 3.5 7 0 0 0 9 16" stroke="currentColor" stroke-width="1.2" fill="none"/>
-            <path d="M 9 2 A 3.5 7 0 0 1 9 16" stroke="currentColor" stroke-width="1.2" fill="none"/>
-            <line x1="2.94" y1="5.5" x2="15.06" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <line x1="2.94" y1="12.5" x2="15.06" y2="12.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-          </svg>
-          <span>{{ $t('settings.webSearchConfig') }}</span>
-        </div>
-        <div class="menu-item" @click="handleQuickNav('mcp')">
-          <t-icon name="tools" class="menu-icon" />
-          <span>{{ $t('settings.mcpService') }}</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="handleSettings">
-          <t-icon name="setting" class="menu-icon" />
-          <span>{{ $t('general.allSettings') }}</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="openApiDoc">
+        <template v-if="showSettings">
+          <div class="menu-item" @click="handleQuickNav('models')">
+            <t-icon name="control-platform" class="menu-icon" />
+            <span>{{ $t('settings.modelManagement') }}</span>
+          </div>
+          <div class="menu-item" @click="handleQuickNav('ollama')">
+            <t-icon name="server" class="menu-icon" />
+            <span>Ollama</span>
+          </div>
+          <div class="menu-item" @click="handleQuickNav('agent')">
+            <t-icon name="chat" class="menu-icon" />
+            <span>{{ $t('settings.conversationStrategy') }}</span>
+          </div>
+          <div class="menu-item" @click="handleQuickNav('websearch')">
+            <svg 
+              width="16" 
+              height="16" 
+              viewBox="0 0 18 18" 
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="menu-icon svg-icon"
+            >
+              <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M 9 2 A 3.5 7 0 0 0 9 16" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M 9 2 A 3.5 7 0 0 1 9 16" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <line x1="2.94" y1="5.5" x2="15.06" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <line x1="2.94" y1="12.5" x2="15.06" y2="12.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <span>{{ $t('settings.webSearchConfig') }}</span>
+          </div>
+          <div class="menu-item" @click="handleQuickNav('mcp')">
+            <t-icon name="tools" class="menu-icon" />
+            <span>{{ $t('settings.mcpService') }}</span>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-item" @click="handleSettings">
+            <t-icon name="setting" class="menu-icon" />
+            <span>{{ $t('general.allSettings') }}</span>
+          </div>
+          <!-- <div class="menu-divider"></div> -->
+        </template>
+        <!-- <div class="menu-item" @click="openApiDoc">
           <t-icon name="book" class="menu-icon" />
           <span class="menu-text-with-icon">
             <span>{{ $t('tenant.apiDocument') }}</span>
@@ -66,8 +68,8 @@
               />
             </svg>
           </span>
-        </div>
-        <div class="menu-item" @click="openWebsite">
+        </div> -->
+        <!-- <div class="menu-item" @click="openWebsite">
           <t-icon name="home" class="menu-icon" />
           <span class="menu-text-with-icon">
             <span>{{ $t('common.website') }}</span>
@@ -78,20 +80,8 @@
               />
             </svg>
           </span>
-        </div>
-        <div class="menu-item" @click="openGithub">
-          <t-icon name="logo-github" class="menu-icon" />
-          <span class="menu-text-with-icon">
-            <span>GitHub</span>
-            <svg class="menu-external-icon" viewBox="0 0 16 16" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12.667 8a.667.667 0 0 1 .666.667v4a2.667 2.667 0 0 1-2.666 2.666H4.667a2.667 2.667 0 0 1-2.667-2.666V5.333a2.667 2.667 0 0 1 2.667-2.666h4a.667.667 0 1 1 0 1.333h-4a1.333 1.333 0 0 0-1.333 1.333v7.334A1.333 1.333 0 0 0 4.667 13.333h6a1.333 1.333 0 0 0 1.333-1.333v-4A.667.667 0 0 1 12.667 8Zm2.666-6.667v4a.667.667 0 0 1-1.333 0V3.276l-5.195 5.195a.667.667 0 0 1-.943-.943l5.195-5.195h-2.057a.667.667 0 0 1 0-1.333h4a.667.667 0 0 1 .666.666Z"
-              />
-            </svg>
-          </span>
-        </div>
-        <div class="menu-divider"></div>
+        </div> -->
+        <!-- <div class="menu-divider"></div> -->
         <div class="menu-item danger" @click="handleLogout">
           <t-icon name="logout" class="menu-icon" />
           <span>{{ $t('auth.logout') }}</span>
@@ -106,6 +96,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUIStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useMenuStore } from '@/stores/menu'
 import { MessagePlugin } from 'tdesign-vue-next'
 import { getCurrentUser, logout as logoutApi } from '@/api/auth'
 import { useI18n } from 'vue-i18n'
@@ -115,14 +106,18 @@ const { t } = useI18n()
 const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
+const menuStore = useMenuStore()
 
 const menuRef = ref<HTMLElement>()
 const menuVisible = ref(false)
 
+// 是否显示设置菜单
+const showSettings = computed(() => menuStore.menuArr.some(item => item.path === 'settings'))
+
 // 用户信息
 const userInfo = ref({
-  username: '用户',
-  email: 'user@example.com',
+  username: '',
+  email: '',
   avatar: ''
 })
 
@@ -164,19 +159,13 @@ const handleSettings = () => {
 // 打开 API 文档
 const openApiDoc = () => {
   menuVisible.value = false
-  window.open('https://github.com/Tencent/WeKnora/blob/main/docs/API.md', '_blank')
+  window.open('https://www.aiplusall.com.cn/docs/API.md', '_blank')
 }
 
 // 打开官网
 const openWebsite = () => {
   menuVisible.value = false
-  window.open('https://weknora.weixin.qq.com/', '_blank')
-}
-
-// 打开 GitHub
-const openGithub = () => {
-  menuVisible.value = false
-  window.open('https://github.com/Tencent/WeKnora', '_blank')
+  window.open('https://www.aiplusall.com.cn/', '_blank')
 }
 
 // 注销
@@ -208,7 +197,7 @@ const loadUserInfo = async () => {
       const user = response.data.user
       userInfo.value = {
         username: user.username || t('common.info'),
-        email: user.email || 'user@example.com',
+        email: user.email || '',
         avatar: user.avatar || ''
       }
       // 同时更新 authStore 中的用户信息，确保包含 can_access_all_tenants 字段
@@ -218,7 +207,9 @@ const loadUserInfo = async () => {
         email: user.email,
         avatar: user.avatar,
         tenant_id: user.tenant_id,
+        role: user.role || 'user',
         can_access_all_tenants: user.can_access_all_tenants || false,
+        menu_config: user.menu_config || [],
         created_at: user.created_at,
         updated_at: user.updated_at
       })
@@ -229,6 +220,7 @@ const loadUserInfo = async () => {
           name: response.data.tenant.name,
           api_key: response.data.tenant.api_key || '',
           owner_id: user.id,
+          menu_config: response.data.tenant.menu_config || [],
           created_at: response.data.tenant.created_at,
           updated_at: response.data.tenant.updated_at
         })

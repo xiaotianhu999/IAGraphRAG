@@ -15,11 +15,30 @@ import (
 // FAQHandler handles FAQ knowledge base operations.
 type FAQHandler struct {
 	knowledgeService interfaces.KnowledgeService
+	userService      interfaces.UserService
 }
 
 // NewFAQHandler creates a new FAQ handler
-func NewFAQHandler(knowledgeService interfaces.KnowledgeService) *FAQHandler {
-	return &FAQHandler{knowledgeService: knowledgeService}
+func NewFAQHandler(knowledgeService interfaces.KnowledgeService, userService interfaces.UserService) *FAQHandler {
+	return &FAQHandler{
+		knowledgeService: knowledgeService,
+		userService:      userService,
+	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (h *FAQHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // ListEntries godoc
@@ -155,6 +174,12 @@ func (h *FAQHandler) CreateEntry(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/faq/entries/{entry_id} [put]
 func (h *FAQHandler) UpdateEntry(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	var req types.FAQEntryPayload
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to bind FAQ entry payload", err)
@@ -189,6 +214,12 @@ func (h *FAQHandler) UpdateEntry(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/faq/entries/tags [put]
 func (h *FAQHandler) UpdateEntryTagBatch(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	var req faqEntryTagBatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to bind FAQ entry tag batch payload", err)
@@ -221,6 +252,12 @@ func (h *FAQHandler) UpdateEntryTagBatch(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/faq/entries/fields [put]
 func (h *FAQHandler) UpdateEntryFieldsBatch(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	var req types.FAQEntryFieldsBatchUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to bind FAQ entry fields batch payload", err)
@@ -263,6 +300,12 @@ type faqEntryTagBatchRequest struct {
 // @Router       /knowledge-bases/{id}/faq/entries [delete]
 func (h *FAQHandler) DeleteEntries(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	var req faqDeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Errorf(ctx, "Failed to bind FAQ delete payload: %s", secutils.SanitizeForLog(err.Error()))
@@ -338,6 +381,10 @@ func (h *FAQHandler) SearchFAQ(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/faq/entries/export [get]
 func (h *FAQHandler) ExportEntries(c *gin.Context) {
 	ctx := c.Request.Context()
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 	kbID := secutils.SanitizeForLog(c.Param("id"))
 
 	csvData, err := h.knowledgeService.ExportFAQEntries(ctx, kbID)
@@ -371,6 +418,10 @@ func (h *FAQHandler) ExportEntries(c *gin.Context) {
 // @Router       /knowledge-bases/{id}/faq/entries/{entry_id} [get]
 func (h *FAQHandler) GetEntry(c *gin.Context) {
 	ctx := c.Request.Context()
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 	kbID := secutils.SanitizeForLog(c.Param("id"))
 	entryID := secutils.SanitizeForLog(c.Param("entry_id"))
 

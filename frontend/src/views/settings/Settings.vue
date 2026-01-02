@@ -309,9 +309,9 @@ onUnmounted(() => {
   width: 100%;
   max-width: 900px;
   height: 700px;
-  background: #ffffff;
+  background: var(--td-bg-color-container);
   border-radius: 12px;
-  box-shadow: 0 6px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--td-shadow-3);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -326,7 +326,7 @@ onUnmounted(() => {
   height: 32px;
   border: none;
   background: transparent;
-  color: #666666;
+  color: var(--td-text-color-secondary);
   cursor: pointer;
   border-radius: 6px;
   display: flex;
@@ -336,8 +336,8 @@ onUnmounted(() => {
   z-index: 10;
 
   &:hover {
-    background: #f5f5f5;
-    color: #333333;
+    background: var(--td-bg-color-container-hover);
+    color: var(--td-text-color-primary);
   }
 }
 
@@ -351,8 +351,8 @@ onUnmounted(() => {
 /* 左侧导航栏 */
 .settings-sidebar {
   width: 220px;
-  background-color: #f8f9fa;
-  border-right: 1px solid #e5e7eb;
+  background-color: var(--td-bg-color-page);
+  border-right: 1px solid var(--td-component-border);
   flex-shrink: 0;
   overflow-y: auto;
   display: flex;
@@ -361,13 +361,13 @@ onUnmounted(() => {
 
 .sidebar-header {
   padding: 24px 16px 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--td-component-border);
 }
 
 .sidebar-title {
   font-size: 18px;
   font-weight: 600;
-  color: #333333;
+  color: var(--td-text-color-primary);
   margin: 0;
 }
 
@@ -383,19 +383,19 @@ onUnmounted(() => {
   margin-bottom: 4px;
   border-radius: 6px;
   cursor: pointer;
-  color: #666666;
+  color: var(--td-text-color-secondary);
   font-size: 14px;
   transition: all 0.2s ease;
   user-select: none;
 
   &:hover {
-    background-color: #e8f5ed;
-    color: #333333;
+    background-color: var(--td-brand-color-light);
+    color: var(--td-text-color-primary);
   }
 
   &.active {
-    background-color: rgba(7, 192, 95, 0.1);
-    color: #07C05F;
+    background-color: var(--td-brand-color-light);
+    color: var(--td-brand-color);
     font-weight: 500;
   }
 }
@@ -432,19 +432,19 @@ onUnmounted(() => {
   margin-bottom: 2px;
   border-radius: 4px;
   cursor: pointer;
-  color: #666666;
+  color: var(--td-text-color-secondary);
   font-size: 13px;
   transition: all 0.2s ease;
   user-select: none;
 
   &:hover {
-    background-color: #f5f7fa;
-    color: #333333;
+    background-color: var(--td-bg-color-container-hover);
+    color: var(--td-text-color-primary);
   }
 
   &.active {
-    background-color: rgba(7, 192, 95, 0.08);
-    color: #07C05F;
+    background-color: var(--td-brand-color-light);
+    color: var(--td-brand-color);
     font-weight: 500;
   }
 }
@@ -483,7 +483,7 @@ onUnmounted(() => {
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  background-color: #ffffff;
+  background-color: var(--td-bg-color-container);
 }
 
 .content-wrapper {

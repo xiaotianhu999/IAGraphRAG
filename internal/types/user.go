@@ -1,9 +1,21 @@
 package types
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"time"
 
 	"gorm.io/gorm"
+)
+
+// UserRole represents the role of a user
+type UserRole string
+
+const (
+	// RoleAdmin is the tenant administrator role
+	RoleAdmin UserRole = "admin"
+	// RoleUser is the normal user role
+	RoleUser UserRole = "user"
 )
 
 // User represents a user in the system
@@ -20,10 +32,14 @@ type User struct {
 	Avatar string `json:"avatar"     gorm:"type:varchar(500)"`
 	// Tenant ID that the user belongs to
 	TenantID uint64 `json:"tenant_id"  gorm:"index"`
+	// Role of the user within the tenant
+	Role UserRole `json:"role"       gorm:"type:varchar(20);default:'user'"`
 	// Whether the user is active
 	IsActive bool `json:"is_active"  gorm:"default:true"`
 	// Whether the user can access all tenants (cross-tenant access)
 	CanAccessAllTenants bool `json:"can_access_all_tenants" gorm:"default:false"`
+	// Menu configuration for this user (overrides tenant default if set)
+	MenuConfig UserMenuConfig `json:"menu_config" gorm:"type:jsonb"`
 	// Creation time of the user
 	CreatedAt time.Time `json:"created_at"`
 	// Last updated time of the user
@@ -91,15 +107,17 @@ type RegisterResponse struct {
 
 // UserInfo represents user information for API responses
 type UserInfo struct {
-	ID                  string    `json:"id"`
-	Username            string    `json:"username"`
-	Email               string    `json:"email"`
-	Avatar              string    `json:"avatar"`
-	TenantID            uint64    `json:"tenant_id"`
-	IsActive            bool      `json:"is_active"`
-	CanAccessAllTenants bool      `json:"can_access_all_tenants"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                  string         `json:"id"`
+	Username            string         `json:"username"`
+	Email               string         `json:"email"`
+	Avatar              string         `json:"avatar"`
+	TenantID            uint64         `json:"tenant_id"`
+	Role                UserRole       `json:"role"`
+	IsActive            bool           `json:"is_active"`
+	CanAccessAllTenants bool           `json:"can_access_all_tenants"`
+	MenuConfig          UserMenuConfig `json:"menu_config"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
 }
 
 // ToUserInfo converts User to UserInfo (without sensitive data)
@@ -110,9 +128,34 @@ func (u *User) ToUserInfo() *UserInfo {
 		Email:               u.Email,
 		Avatar:              u.Avatar,
 		TenantID:            u.TenantID,
+		Role:                u.Role,
 		IsActive:            u.IsActive,
 		CanAccessAllTenants: u.CanAccessAllTenants,
+		MenuConfig:          u.MenuConfig,
 		CreatedAt:           u.CreatedAt,
 		UpdatedAt:           u.UpdatedAt,
 	}
+}
+
+// UserMenuConfig represents the menu configuration for a user
+type UserMenuConfig []string
+
+// Value implements the driver.Valuer interface
+func (m UserMenuConfig) Value() (driver.Value, error) {
+	if len(m) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(m)
+}
+
+// Scan implements the sql.Scanner interface
+func (m *UserMenuConfig) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	b, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	return json.Unmarshal(b, m)
 }

@@ -81,7 +81,8 @@ WeKnora employs a modern modular design to build a complete document understandi
 - **🔍 Precise Understanding**: Structured content extraction from PDFs, Word documents, images and more into unified semantic views
 - **🧠 Intelligent Reasoning**: Leverages LLMs to understand document context and user intent for accurate Q&A and multi-turn conversations
 - **📚 Multi-Type Knowledge Bases**: Support for FAQ and document knowledge base types, with folder import, URL import, tag management, and online entry capabilities
-- **🔧 Flexible Extension**: All components from parsing and embedding to retrieval and generation are decoupled for easy customization
+- **� User & Permission Management**: Flexible role-based access control (Super Admin, Tenant Admin, Normal User) with user-level and tenant-level menu permission configuration
+- **�🔧 Flexible Extension**: All components from parsing and embedding to retrieval and generation are decoupled for easy customization
 - **⚡ Efficient Retrieval**: Hybrid retrieval strategies combining keywords, vectors, and knowledge graphs, with cross-knowledge base retrieval support
 - **🌐 Web Search**: Support for extensible web search engines with built-in DuckDuckGo search engine
 - **🔌 MCP Tool Integration**: Support for extending Agent capabilities through MCP, with built-in uvx and npx launchers, supporting multiple transport methods
@@ -324,6 +325,12 @@ Please refer to the [MCP Configuration Guide](./mcp-server/MCP_CONFIG.md) for th
 Troubleshooting FAQ: [Troubleshooting FAQ](./docs/QA.md)
 
 Detailed API documentation is available at: [API Docs](./docs/api/README.md)
+
+**Key Documentation:**
+- [Permission Management System](./docs/权限管理系统.md) - User roles and permission configuration guide
+- [Knowledge Graph Setup](./docs/开启知识图谱功能.md) - Knowledge graph configuration
+- [MCP Integration Guide](./docs/MCP功能使用说明.md) - MCP tool integration
+- [Development Guide](./docs/开发指南.md) - Development environment setup
 
 ## 🧭 Developer Guide
 

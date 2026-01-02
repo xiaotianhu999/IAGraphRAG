@@ -14,13 +14,30 @@ import (
 // MCPServiceHandler handles MCP service related HTTP requests
 type MCPServiceHandler struct {
 	mcpServiceService interfaces.MCPServiceService
+	userService       interfaces.UserService
 }
 
 // NewMCPServiceHandler creates a new MCP service handler
-func NewMCPServiceHandler(mcpServiceService interfaces.MCPServiceService) *MCPServiceHandler {
+func NewMCPServiceHandler(mcpServiceService interfaces.MCPServiceService, userService interfaces.UserService) *MCPServiceHandler {
 	return &MCPServiceHandler{
 		mcpServiceService: mcpServiceService,
+		userService:       userService,
 	}
+}
+
+// checkAdmin checks if the current user has admin or super admin role
+func (h *MCPServiceHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
 }
 
 // CreateMCPService godoc
@@ -37,6 +54,11 @@ func NewMCPServiceHandler(mcpServiceService interfaces.MCPServiceService) *MCPSe
 // @Router       /mcp-services [post]
 func (h *MCPServiceHandler) CreateMCPService(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 
 	var service types.MCPService
 	if err := c.ShouldBindJSON(&service); err != nil {
@@ -150,6 +172,12 @@ func (h *MCPServiceHandler) GetMCPService(c *gin.Context) {
 // @Router       /mcp-services/{id} [put]
 func (h *MCPServiceHandler) UpdateMCPService(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	serviceID := secutils.SanitizeForLog(c.Param("id"))
 
 	tenantID := c.GetUint64(types.TenantIDContextKey.String())
@@ -281,6 +309,12 @@ func (h *MCPServiceHandler) UpdateMCPService(c *gin.Context) {
 // @Router       /mcp-services/{id} [delete]
 func (h *MCPServiceHandler) DeleteMCPService(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	serviceID := secutils.SanitizeForLog(c.Param("id"))
 
 	tenantID := c.GetUint64(types.TenantIDContextKey.String())

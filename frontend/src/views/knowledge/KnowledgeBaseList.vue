@@ -76,6 +76,7 @@
         <div class="card-header">
           <span class="card-title" :title="kb.name">{{ kb.name }}</span>
           <t-popup 
+            v-if="authStore.isAdmin"
             v-model="kb.showMore" 
             overlayClassName="card-more-popup"
             :on-visible-change="onVisibleChange"
@@ -205,12 +206,14 @@ import { MessagePlugin, Icon as TIcon } from 'tdesign-vue-next'
 import { listKnowledgeBases, deleteKnowledgeBase } from '@/api/knowledge-base'
 import { formatStringDate } from '@/utils/index'
 import { useUIStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import KnowledgeBaseEditorModal from './KnowledgeBaseEditorModal.vue'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const route = useRoute()
 const uiStore = useUIStore()
+const authStore = useAuthStore()
 const { t } = useI18n()
 
 interface KB { 

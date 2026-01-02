@@ -1,16 +1,69 @@
 export default {
   menu: {
+    dashboard: 'Dashboard',
     knowledgeBase: 'Knowledge Base',
     chat: 'Chat',
     createChat: 'Create Chat',
     tenant: 'Account Info',
     settings: 'System Settings',
+    tenantManagement: 'Tenant Management',
+    userManagement: 'User Management',
+    auditLog: 'Audit Log',
     logout: 'Logout',
     uploadKnowledge: 'Upload Knowledge',
     deleteRecord: 'Delete Record',
     newSession: 'New Chat',
     confirmLogout: 'Are you sure you want to logout?',
     systemInfo: 'System Information'
+  },
+  dashboard: {
+    title: 'System Dashboard',
+    stats: {
+      tenants: 'Total Tenants',
+      users: 'Total Users',
+      knowledge_bases: 'Total Knowledge Bases',
+      documents: 'Total Documents'
+    },
+    storage: {
+      title: 'Storage Usage',
+      desc: 'Includes vector DB, original files, and parsed text'
+    },
+    recent_activities: 'Recent Activities',
+  },
+  init: {
+    title: 'System Initialization Wizard',
+    subtitle: 'Welcome to AI-LegalScape, please complete the following steps to get started',
+    steps: {
+      admin: 'Admin Account',
+      tenant: 'Tenant Info',
+      confirm: 'Confirm'
+    },
+    form: {
+      username: 'Admin Username',
+      email: 'Admin Email',
+      password: 'Admin Password',
+      tenant_name: 'Initial Tenant Name'
+    },
+    placeholder: {
+      username: 'Enter admin username',
+      email: 'Enter admin email',
+      password: 'Enter admin password',
+      tenant_name: 'Enter initial tenant name'
+    },
+    rules: {
+      username: 'Username is required',
+      email: 'Email is required',
+      email_format: 'Invalid email format',
+      password: 'Password is required',
+      password_len: 'Password must be at least 8 characters',
+      tenant_name: 'Tenant name is required'
+    },
+    confirm: {
+      title: 'Please confirm initialization info'
+    },
+    submit: 'Start Initialization',
+    success: 'System initialized successfully!',
+    failed: 'System initialization failed'
   },
   knowledgeBase: {
     title: 'Knowledge Base',
@@ -339,7 +392,7 @@ export default {
   },
   initialization: {
     title: 'Initialization',
-    welcome: 'Welcome to WeKnora',
+    welcome: 'Welcome to aiplusall',
     description: 'Please configure the system before starting',
     step1: 'Step 1: Configure LLM Model',
     step2: 'Step 2: Configure Embedding Model',
@@ -566,7 +619,7 @@ export default {
     registerNow: 'Register Now',
     registerSuccess: 'Registration successful! The system has created an exclusive tenant for you, please login',
     registerFailed: 'Registration failed',
-    subtitle: 'Document understanding and semantic search framework based on large models',
+    subtitle: 'Welcome to AI-LegalScape',
     registerSubtitle: 'The system will create an exclusive tenant for you after registration',
     emailPlaceholder: 'Enter email address',
     passwordPlaceholder: 'Enter password (8-32 characters, including letters and numbers)',
@@ -1439,7 +1492,11 @@ export default {
     allSettings: 'All Settings',
     description: 'Configure language, appearance and other basic options',
     settings: 'Settings',
-    close: 'Close Settings'
+    close: 'Close Settings',
+    theme: 'Appearance Theme',
+    themeDescription: 'Select the display style of the system interface',
+    light: 'Light Mode',
+    dark: 'Dark Mode'
   },
   platform: {
     subtitle: 'Enterprise-level Intelligent Document Retrieval Framework',

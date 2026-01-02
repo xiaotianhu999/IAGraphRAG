@@ -21,6 +21,7 @@ import (
 type KnowledgeBaseHandler struct {
 	service          interfaces.KnowledgeBaseService
 	knowledgeService interfaces.KnowledgeService
+	userService      interfaces.UserService
 	asynqClient      *asynq.Client
 }
 
@@ -28,11 +29,13 @@ type KnowledgeBaseHandler struct {
 func NewKnowledgeBaseHandler(
 	service interfaces.KnowledgeBaseService,
 	knowledgeService interfaces.KnowledgeService,
+	userService interfaces.UserService,
 	asynqClient *asynq.Client,
 ) *KnowledgeBaseHandler {
 	return &KnowledgeBaseHandler{
 		service:          service,
 		knowledgeService: knowledgeService,
+		userService:      userService,
 		asynqClient:      asynqClient,
 	}
 }
@@ -90,6 +93,21 @@ func (h *KnowledgeBaseHandler) HybridSearch(c *gin.Context) {
 	})
 }
 
+// checkAdmin checks if the current user has admin or super admin role
+func (h *KnowledgeBaseHandler) checkAdmin(c *gin.Context) bool {
+	ctx := c.Request.Context()
+	user, err := h.userService.GetCurrentUser(ctx)
+	if err != nil {
+		c.Error(errors.NewUnauthorizedError("Unauthorized"))
+		return false
+	}
+	if !user.CanAccessAllTenants && user.Role != types.RoleAdmin {
+		c.Error(errors.NewForbiddenError("Insufficient permissions"))
+		return false
+	}
+	return true
+}
+
 // CreateKnowledgeBase godoc
 // @Summary      创建知识库
 // @Description  创建新的知识库
@@ -104,6 +122,11 @@ func (h *KnowledgeBaseHandler) HybridSearch(c *gin.Context) {
 // @Router       /knowledge-bases [post]
 func (h *KnowledgeBaseHandler) CreateKnowledgeBase(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
 
 	logger.Info(ctx, "Start creating knowledge base")
 
@@ -253,6 +276,12 @@ type UpdateKnowledgeBaseRequest struct {
 // @Router       /knowledge-bases/{id} [put]
 func (h *KnowledgeBaseHandler) UpdateKnowledgeBase(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start updating knowledge base")
 
 	// Validate and get the knowledge base
@@ -303,6 +332,12 @@ func (h *KnowledgeBaseHandler) UpdateKnowledgeBase(c *gin.Context) {
 // @Router       /knowledge-bases/{id} [delete]
 func (h *KnowledgeBaseHandler) DeleteKnowledgeBase(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	logger.Info(ctx, "Start deleting knowledge base")
 
 	// Validate and get the knowledge base
@@ -357,6 +392,12 @@ type CopyKnowledgeBaseResponse struct {
 // @Router       /knowledge-bases/copy [post]
 func (h *KnowledgeBaseHandler) CopyKnowledgeBase(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
 	var req CopyKnowledgeBaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Failed to parse request parameters", err)
@@ -465,8 +506,9 @@ func (h *KnowledgeBaseHandler) GetKBCloneProgress(c *gin.Context) {
 }
 
 // validateExtractConfig validates the graph configuration parameters
+// When fields are empty, they will use default values from config.yaml (extract.extract_graph)
 func validateExtractConfig(config *types.ExtractConfig) error {
-	logger.Errorf(context.Background(), "Validating extract configuration: %+v", config)
+	logger.Infof(context.Background(), "Validating extract configuration: enabled=%v", config != nil && config.Enabled)
 	if config == nil {
 		return nil
 	}
@@ -474,27 +516,23 @@ func validateExtractConfig(config *types.ExtractConfig) error {
 		*config = types.ExtractConfig{Enabled: false}
 		return nil
 	}
-	// Validate text field
-	if config.Text == "" {
-		return errors.NewBadRequestError("text cannot be empty")
-	}
 
-	// Validate tags field
-	if len(config.Tags) == 0 {
-		return errors.NewBadRequestError("tags cannot be empty")
-	}
+	// When enabled is true, allow empty fields to use default values from config.yaml
+	// Only validate non-empty fields for data integrity
+
+	// Validate tags: if provided, check for empty strings
 	for i, tag := range config.Tags {
 		if tag == "" {
 			return errors.NewBadRequestError("tag cannot be empty at index " + strconv.Itoa(i))
 		}
 	}
 
-	// Validate nodes
-	if len(config.Nodes) == 0 {
-		return errors.NewBadRequestError("nodes cannot be empty")
-	}
+	// Build node name map for relation validation
 	nodeNames := make(map[string]bool)
 	for i, node := range config.Nodes {
+		if node == nil {
+			return errors.NewBadRequestError("node cannot be nil at index " + strconv.Itoa(i))
+		}
 		if node.Name == "" {
 			return errors.NewBadRequestError("node name cannot be empty at index " + strconv.Itoa(i))
 		}
@@ -505,11 +543,11 @@ func validateExtractConfig(config *types.ExtractConfig) error {
 		nodeNames[node.Name] = true
 	}
 
-	if len(config.Relations) == 0 {
-		return errors.NewBadRequestError("relations cannot be empty")
-	}
-	// Validate relations
+	// Validate relations: if provided, check data integrity
 	for i, relation := range config.Relations {
+		if relation == nil {
+			return errors.NewBadRequestError("relation cannot be nil at index " + strconv.Itoa(i))
+		}
 		if relation.Node1 == "" {
 			return errors.NewBadRequestError("relation node1 cannot be empty at index " + strconv.Itoa(i))
 		}
@@ -519,14 +557,113 @@ func validateExtractConfig(config *types.ExtractConfig) error {
 		if relation.Type == "" {
 			return errors.NewBadRequestError("relation type cannot be empty at index " + strconv.Itoa(i))
 		}
-		// Check if referenced nodes exist
-		if !nodeNames[relation.Node1] {
-			return errors.NewBadRequestError("relation references non-existent node1: " + relation.Node1)
-		}
-		if !nodeNames[relation.Node2] {
-			return errors.NewBadRequestError("relation references non-existent node2: " + relation.Node2)
+		// Check if referenced nodes exist (only when nodes are provided)
+		if len(config.Nodes) > 0 {
+			if !nodeNames[relation.Node1] {
+				return errors.NewBadRequestError("relation references non-existent node1: " + relation.Node1)
+			}
+			if !nodeNames[relation.Node2] {
+				return errors.NewBadRequestError("relation references non-existent node2: " + relation.Node2)
+			}
 		}
 	}
 
 	return nil
+}
+
+// RebuildGraph godoc
+// @Summary      批量重建知识图谱
+// @Description  对知识库中已有的所有文档批量提取实体和关系，重新构建知识图谱。适用于后期启用图谱功能的场景。
+// @Tags         知识库
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                    true   "知识库ID"
+// @Param        request  body      RebuildGraphRequest       false  "重建参数"
+// @Success      200      {object}  map[string]interface{}   "任务已提交"
+// @Failure      400      {object}  errors.AppError          "请求参数错误"
+// @Failure      404      {object}  errors.AppError          "知识库不存在"
+// @Failure      500      {object}  errors.AppError          "服务器内部错误"
+// @Security     Bearer
+// @Security     ApiKeyAuth
+// @Router       /knowledge-bases/{id}/rebuild-graph [post]
+func (h *KnowledgeBaseHandler) RebuildGraph(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Check if user has permission
+	if !h.checkAdmin(c) {
+		return
+	}
+
+	// Get knowledge base ID
+	kbID := c.Param("id")
+	if kbID == "" {
+		c.Error(errors.NewBadRequestError("Knowledge base ID is required"))
+		return
+	}
+
+	// Parse request body
+	var req RebuildGraphRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Error(ctx, "Failed to parse rebuild graph request", err)
+		c.Error(errors.NewBadRequestError("Invalid request parameters").WithDetails(err.Error()))
+		return
+	}
+
+	// Validate knowledge base exists
+	kb, err := h.service.GetKnowledgeBaseByID(ctx, kbID)
+	if err != nil {
+		c.Error(errors.NewNotFoundError("Knowledge base not found"))
+		return
+	}
+
+	// Check if graph extraction is enabled
+	if kb.ExtractConfig == nil || !kb.ExtractConfig.Enabled {
+		c.Error(errors.NewBadRequestError("Knowledge base does not have graph extraction enabled"))
+		return
+	}
+
+	logger.Infof(ctx, "Rebuilding graph for knowledge base: %s, model_id: %s, batch_size: %d",
+		secutils.SanitizeForLog(kbID), secutils.SanitizeForLog(req.ModelID), req.BatchSize)
+
+	// Create rebuild task payload
+	payload := types.GraphRebuildPayload{
+		TenantID:        kb.TenantID,
+		KnowledgeBaseID: kbID,
+		ModelID:         req.ModelID,
+		BatchSize:       req.BatchSize,
+	}
+
+	payloadBytes, err := payload.Marshal()
+	if err != nil {
+		logger.Error(ctx, "Failed to marshal rebuild payload", err)
+		c.Error(errors.NewInternalServerError("Failed to create rebuild task"))
+		return
+	}
+
+	// Enqueue async task
+	task := asynq.NewTask(types.TypeGraphRebuild, payloadBytes, asynq.Queue("default"))
+	info, err := h.asynqClient.Enqueue(task)
+	if err != nil {
+		logger.Error(ctx, "Failed to enqueue rebuild task", err)
+		c.Error(errors.NewInternalServerError("Failed to submit rebuild task"))
+		return
+	}
+
+	logger.Infof(ctx, "Graph rebuild task submitted: task_id=%s, kb_id=%s", info.ID, kbID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Graph rebuild task has been submitted",
+		"data": gin.H{
+			"task_id":           info.ID,
+			"knowledge_base_id": kbID,
+			"batch_size":        req.BatchSize,
+		},
+	})
+}
+
+// RebuildGraphRequest represents the request to rebuild knowledge graph
+type RebuildGraphRequest struct {
+	ModelID   string `json:"model_id" example:"model-uuid"` // 使用的模型ID，留空则使用知识库默认模型
+	BatchSize int    `json:"batch_size" example:"100"`      // 批处理大小，0表示全量处理
 }

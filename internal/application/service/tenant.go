@@ -57,6 +57,12 @@ func (s *tenantService) CreateTenant(ctx context.Context, tenant *types.Tenant) 
 	tenant.CreatedAt = time.Now()
 	tenant.UpdatedAt = time.Now()
 
+	// Set default menu config for tenant (used as fallback for users without individual config)
+	// Default: only chat functionality for normal users
+	if len(tenant.MenuConfig) == 0 {
+		tenant.MenuConfig = types.MenuConfig{"creatChat"}
+	}
+
 	logger.Info(ctx, "Saving tenant information to database")
 	if err := s.repo.CreateTenant(ctx, tenant); err != nil {
 		logger.ErrorWithFields(ctx, err, map[string]interface{}{

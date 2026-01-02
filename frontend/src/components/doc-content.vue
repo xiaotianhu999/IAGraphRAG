@@ -8,6 +8,7 @@ import { downKnowledgeDetails, deleteGeneratedQuestion } from "@/api/knowledge-b
 import { MessagePlugin, DialogPlugin } from "tdesign-vue-next";
 import { sanitizeHTML, safeMarkdownToHTML, createSafeImage, isValidImageURL } from '@/utils/security';
 import { useI18n } from 'vue-i18n';
+import ChunkViewer from '@/views/knowledge/components/ChunkViewer.vue';
 
 const { t } = useI18n();
 
@@ -21,8 +22,8 @@ let doc = null;
 let down = ref()
 let mdContentWrap = ref()
 let url = ref('')
-// 视图模式：chunks / original
-const viewMode = ref<'chunks' | 'original'>('chunks');
+// 视图模式：chunks / original / viewer (新增)
+const viewMode = ref<'chunks' | 'original' | 'viewer'>('chunks');
 const originalContent = ref<string>('');
 const loadingOriginal = ref(false);
 onMounted(() => {
@@ -138,13 +139,27 @@ const loadOriginalContent = async () => {
   }
 };
 const toggleViewMode = () => {
+  // 循环切换三种视图模式：chunks -> viewer -> original -> chunks
   if (viewMode.value === 'chunks') {
+    viewMode.value = 'viewer';
+  } else if (viewMode.value === 'viewer') {
     viewMode.value = 'original';
     if (!originalContent.value && props.details.type === 'file') {
       loadOriginalContent();
     }
   } else {
     viewMode.value = 'chunks';
+  }
+};
+
+// 获取当前视图模式的按钮文本
+const getViewModeButtonText = () => {
+  if (viewMode.value === 'chunks') {
+    return t('knowledgeBase.viewAnalysis') || '详细分析';
+  } else if (viewMode.value === 'viewer') {
+    return t('knowledgeBase.viewOriginal') || '查看原文件';
+  } else {
+    return t('knowledgeBase.viewChunks') || '查看分块';
   }
 };
 watch(() => props.details.md, (newVal) => {
@@ -458,11 +473,13 @@ const handleDetailsScroll = () => {
             <span v-if="viewMode === 'chunks' && details.total > 0" class="chunk-count">
               {{ $t('knowledgeBase.chunkCount', { count: details.total }) || `共 ${details.total} 个片段` }}
             </span>
+            <t-tag v-if="viewMode === 'viewer'" theme="primary" variant="light" size="small">
+              {{ $t('knowledgeBase.detailedAnalysis') || '详细分析模式' }}
+            </t-tag>
           </div>
           <div class="meta-row">
             <span class="time"> {{ getTimeLabel() }}：{{ details.time }} </span>
             <t-button 
-              v-if="details.type === 'file'" 
               size="small" 
               variant="outline" 
               theme="primary"
@@ -470,16 +487,20 @@ const handleDetailsScroll = () => {
               :loading="loadingOriginal && viewMode === 'original'"
               class="view-mode-toggle"
             >
-              {{ viewMode === 'chunks' 
-                ? (t('knowledgeBase.viewOriginal') || '查看原文件') 
-                : (t('knowledgeBase.viewChunks') || '查看分块') }}
+              <t-icon name="swap" />
+              {{ getViewModeButtonText() }}
             </t-button>
           </div>
         </div>
       </div>
       
+      <!-- 详细分析视图（ChunkViewer） -->
+      <div v-if="viewMode === 'viewer'" class="chunk-viewer-container">
+        <ChunkViewer v-if="details.id" :knowledge-id="details.id" />
+      </div>
+
       <!-- 原文件视图 -->
-      <div v-if="viewMode === 'original'">
+      <div v-else-if="viewMode === 'original'">
         <div v-if="isMarkdownFile(details.file_type)" class="md-content original-md" v-html="processMarkdown(originalContent || '')"></div>
         <pre v-else class="original-text">{{ originalContent }}</pre>
       </div>
@@ -930,4 +951,20 @@ const handleDetailsScroll = () => {
   gap: 4px;
   margin-top: 12px;
 }
+
+// ChunkViewer容器样式
+.chunk-viewer-container {
+  margin-top: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 0;
+  min-height: 400px;
+}
+
+.view-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 </style>
+
