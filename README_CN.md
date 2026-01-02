@@ -177,7 +177,7 @@ ollama serve > /dev/null 2>&1 &
 ```bash
 docker compose up -d
 ```
-
+  <img src="https://img.shields.io/badge/License-MIT-ffffff?labelColor=d4eaf7&color=2e6cc4" alt="License">
 - 启动全部功能
 ```bash
 docker-compose --profile full up -d
@@ -187,8 +187,8 @@ docker-compose --profile full up -d
 ```bash
 docker-compose --profile jaeger up -d
 ```
-
-- 需要 neo4j 知识图谱
+git clone https://github.com/xiaotianhu999/IAGraphRAG.git
+cd IAGraphRAG
 ```bash
 docker-compose --profile neo4j up -d
 ```
@@ -225,10 +225,10 @@ WeKnora 作为[微信对话开放平台](https://chatbot.weixin.qq.com)的核心
 
 - **零代码部署**：只需上传知识，即可在微信生态中快速部署智能问答服务，实现"即问即答"的体验
 - **高效问题管理**：支持高频问题的独立分类管理，提供丰富的数据工具，确保回答精准可靠且易于维护
-- **微信生态覆盖**：通过微信对话开放平台，WeKnora 的智能问答能力可无缝集成到公众号、小程序等微信场景中，提升用户交互体验
+[![Contributors](https://contrib.rocks/image?repo=xiaotianhu999/IAGraphRAG)](https://github.com/xiaotianhu999/IAGraphRAG/graphs/contributors)
 
 ### 🔗 MCP 服务器访问已经部署好的 WeKnora
-
+<a href="https://www.star-history.com/#xiaotianhu999/IAGraphRAG&type=date&legend=top-left">
 #### 1️⃣克隆储存库
 
 ```
@@ -423,7 +423,7 @@ refactor: 重构文档解析模块
 
 感谢以下优秀的贡献者们：
 
-[![Contributors](https://contrib.rocks/image?repo=Tencent/WeKnora)](https://github.com/Tencent/WeKnora/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=xiaotianhu999/IAGraphRAG)](https://github.com/xiaotianhu999/IAGraphRAG/graphs/contributors)
 
 ## 📄 许可证
 
@@ -432,10 +432,10 @@ refactor: 重构文档解析模块
 
 ## 📈 项目统计
 
-<a href="https://www.star-history.com/#Tencent/WeKnora&type=date&legend=top-left">
+<a href="https://www.star-history.com/#xiaotianhu999/IAGraphRAG&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Tencent/WeKnora&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Tencent/WeKnora&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Tencent/WeKnora&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xiaotianhu999/IAGraphRAG&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xiaotianhu999/IAGraphRAG&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xiaotianhu999/IAGraphRAG&type=date&legend=top-left" />
  </picture>
 </a>

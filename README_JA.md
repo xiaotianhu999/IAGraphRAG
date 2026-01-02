@@ -18,7 +18,7 @@
     <a href="https://chatbot.weixin.qq.com" target="_blank">
         <img alt="WeChat対話オープンプラットフォーム" src="https://img.shields.io/badge/WeChat対話オープンプラットフォーム-5ac725">
     </a>
-    <a href="https://github.com/Tencent/WeKnora/blob/main/LICENSE">
+    <a href="https://github.com/xiaotianhu999/IAGraphRAG/blob/main/LICENSE">
         <img src="https://img.shields.io/badge/License-MIT-ffffff?labelColor=d4eaf7&color=2e6cc4" alt="License">
     </a>
     <a href="./CHANGELOG.md">
@@ -136,8 +136,8 @@ WeKnoraは現代的なモジュラー設計を採用し、完全な文書理解�
 
 ```bash
 # メインリポジトリをクローン
-git clone https://github.com/Tencent/WeKnora.git
-cd WeKnora
+git clone https://github.com/xiaotianhu999/IAGraphRAG.git
+cd IAGraphRAG
 ```
 
 #### ② 環境変数の設定
@@ -375,7 +375,7 @@ WeKnora/
 
 ## 🤝 貢献ガイド
 
-コミュニティユーザーの貢献を歓迎します！提案、バグ、新機能のリクエストがある場合は、[Issue](https://github.com/Tencent/WeKnora/issues)を通じて提出するか、直接Pull Requestを提出してください。
+コミュニティユーザーの貢献を歓迎します！提案、バグ、新機能のリクエストがある場合は、[Issue](https://github.com/xiaotianhu999/IAGraphRAG/issues)を通じて提出するか、直接Pull Requestを提出してください。
 
 ### 🎯 貢献方法
 
@@ -416,7 +416,7 @@ refactor: 文書解析モジュールをリファクタリング
 
 素晴らしいコントリビューターに感謝します：
 
-[![Contributors](https://contrib.rocks/image?repo=Tencent/WeKnora )](https://github.com/Tencent/WeKnora/graphs/contributors )
+[![Contributors](https://contrib.rocks/image?repo=xiaotianhu999/IAGraphRAG )](https://github.com/xiaotianhu999/IAGraphRAG/graphs/contributors )
 
 ## 📄 ライセンス
 
@@ -425,10 +425,10 @@ refactor: 文書解析モジュールをリファクタリング
 
 ## 📈 プロジェクト統計
 
-<a href="https://www.star-history.com/#Tencent/WeKnora&type=date&legend=top-left">
+<a href="https://www.star-history.com/#xiaotianhu999/IAGraphRAG&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Tencent/WeKnora&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Tencent/WeKnora&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Tencent/WeKnora&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=xiaotianhu999/IAGraphRAG&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=xiaotianhu999/IAGraphRAG&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=xiaotianhu999/IAGraphRAG&type=date&legend=top-left" />
  </picture>
 </a>
