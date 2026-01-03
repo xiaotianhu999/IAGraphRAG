@@ -41,3 +41,7 @@ data/files/
 /scripts/scale_dev_jobs.sh
 server
 frontend/.vite
+# Temporary / local test files
+docreader/tests/
+docreader/utils/sentence_split.py
+quick_integration_test.py
