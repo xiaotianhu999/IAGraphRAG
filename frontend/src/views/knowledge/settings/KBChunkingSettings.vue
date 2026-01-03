@@ -67,6 +67,36 @@
           />
         </div>
       </div>
+
+      <!-- Paragraph Aware -->
+      <div class="setting-row">
+        <div class="setting-info">
+          <label>{{ $t('knowledgeEditor.chunking.paragraphAwareLabel') }}</label>
+          <p class="desc">{{ $t('knowledgeEditor.chunking.paragraphAwareDescription') }}</p>
+        </div>
+        <div class="setting-control">
+          <t-switch
+            v-model="localParagraphAware"
+            @change="handleParagraphAwareChange"
+          />
+        </div>
+      </div>
+
+      <!-- Language (shown only when paragraph aware is enabled) -->
+      <div class="setting-row" v-if="localParagraphAware">
+        <div class="setting-info">
+          <label>{{ $t('knowledgeEditor.chunking.languageLabel') }}</label>
+          <p class="desc">{{ $t('knowledgeEditor.chunking.languageDescription') }}</p>
+        </div>
+        <div class="setting-control">
+          <t-select
+            v-model="localLanguage"
+            :options="languageOptions"
+            @change="handleLanguageChange"
+            style="width: 200px;"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -79,6 +109,8 @@ interface ChunkingConfig {
   chunkSize: number
   chunkOverlap: number
   separators: string[]
+  paragraphAware?: boolean
+  language?: string
 }
 
 interface Props {
@@ -94,6 +126,8 @@ const emit = defineEmits<{
 const localChunkSize = ref(props.config.chunkSize)
 const localChunkOverlap = ref(props.config.chunkOverlap)
 const localSeparators = ref([...props.config.separators])
+const localParagraphAware = ref(props.config.paragraphAware ?? true)
+const localLanguage = ref(props.config.language ?? 'zh')
 const { t } = useI18n()
 
 // Separator options
@@ -108,11 +142,19 @@ const separatorOptions = computed(() => [
   { label: t('knowledgeEditor.chunking.separators.space'), value: ' ' }
 ])
 
+// Language options
+const languageOptions = computed(() => [
+  { label: t('knowledgeEditor.chunking.languages.chinese'), value: 'zh' },
+  { label: t('knowledgeEditor.chunking.languages.english'), value: 'en' }
+])
+
 // Watch for prop changes
 watch(() => props.config, (newConfig) => {
   localChunkSize.value = newConfig.chunkSize
   localChunkOverlap.value = newConfig.chunkOverlap
   localSeparators.value = [...newConfig.separators]
+  localParagraphAware.value = newConfig.paragraphAware ?? true
+  localLanguage.value = newConfig.language ?? 'zh'
 }, { deep: true })
 
 // Handle chunk size change
@@ -130,12 +172,24 @@ const handleSeparatorsChange = () => {
   emitUpdate()
 }
 
+// Handle paragraph aware change
+const handleParagraphAwareChange = () => {
+  emitUpdate()
+}
+
+// Handle language change
+const handleLanguageChange = () => {
+  emitUpdate()
+}
+
 // Emit update event
 const emitUpdate = () => {
   emit('update:config', {
     chunkSize: localChunkSize.value,
     chunkOverlap: localChunkOverlap.value,
-    separators: localSeparators.value
+    separators: localSeparators.value,
+    paragraphAware: localParagraphAware.value,
+    language: localLanguage.value
   })
 }
 </script>

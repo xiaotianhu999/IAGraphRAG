@@ -228,16 +228,6 @@ conversation:
     - EVIDENCE: 证据（如行车记录仪视频）
     - TIME/LOCATION/ASSET: 时间、地点、涉案金额/物品
 
-    ### 关系类型
-    - belongs_to: [ARTICLE] -> [LAW] (法条属于哪部法律)
-    - accused_of: [PERSON] -> [CRIME] (被告人被指控的罪名)
-    - sued_for: [PERSON/ORG] -> [CAUSE_OF_ACTION] (原告起诉的案由)
-    - sentenced_to: [PERSON] -> [PUNISHMENT] (被告人被判处的刑罚)
-    - bear_liability: [PERSON/ORG] -> [LIABILITY] (承担的民事责任)
-    - applies_concept: [PERSON/ACT] -> [LEGAL_CONCEPT] (案件涉及的法律概念，如正当防卫)
-    - proves: [EVIDENCE] -> [CRIME/FACT] (证据证明的事实或罪行)
-    - is_role_of: [PERSON] -> [ROLE] (注意：如果文本明确说"张三(被告人)"，则抽取PERSON为"张三"，属性为"被告人")
-
     ## 要求
     1. 提取结果必须以JSON数组格式输出
     2. 每个实体必须包含 title 和 type 字段，description 字段可选但强烈建议提供
@@ -283,8 +273,22 @@ conversation:
     ]
 
   extract_relationships_prompt: |
+    ## 角色
+    你是一位资深的法律领域知识图谱构建专家。你精通中国刑法、民法及相关诉讼法，擅长从非结构化或半结构化的法律文本中精准抽取实体关系。
+
     ## 任务
-    从用户提供的实体数组中，提取实体之间存在的明确关系，形成结构化的关系网络。
+    从用户提供的实体数组中，严格按照预定义的Schema（关系类型）提取实体之间存在的明确关系，形成结构化的关系网络。
+
+    ## Schema Definition
+    ### 关系类型
+    - belongs_to: [ARTICLE] -> [LAW] (法条属于哪部法律)
+    - accused_of: [PERSON] -> [CRIME] (被告人被指控的罪名)
+    - sued_for: [PERSON/ORG] -> [CAUSE_OF_ACTION] (原告起诉的案由)
+    - sentenced_to: [PERSON] -> [PUNISHMENT] (被告人被判处的刑罚)
+    - bear_liability: [PERSON/ORG] -> [LIABILITY] (承担的民事责任)
+    - applies_concept: [PERSON/ACT] -> [LEGAL_CONCEPT] (案件涉及的法律概念，如正当防卫)
+    - proves: [EVIDENCE] -> [CRIME/FACT] (证据证明的事实或罪行)
+    - is_role_of: [PERSON] -> [ROLE] (注意：如果文本明确说"张三(被告人)"，则抽取PERSON为"张三"，属性为"被告人")
 
     ## 要求
     1. 关系提取必须基于提供的文本内容，不得臆测不存在的关系
@@ -466,8 +470,9 @@ conversation:
     ]
 
   generate_questions_prompt: |
-    你是一个专业的问题生成助手。你的任务是根据给定的【主要内容】生成用户可能会问的相关问题。
+    你是一个专业的问题生成助手。你的任务是根据给定的【主要内容】，并结合【文档元信息】（如有），生成用户可能会问的相关问题。
 
+    {{.DocMetadata}}
     {{.Context}}
     ## 主要内容（请基于此内容生成问题）
     文档名称：{{.DocName}}
@@ -476,6 +481,9 @@ conversation:
 
     ## 核心要求
     - 生成的问题必须与【主要内容】直接相关
+    - **关键规则**：如果【主要内容】中缺少具体时间（年份）、版本号或完整专有名词，**必须**参考【文档元信息】进行补充。例如：
+      - 错误："年宪法修正案做了什么修改？"（缺失年份）
+      - 正确："2018年宪法修正案做了什么修改？"（从元信息补充年份）
     - 问题中禁止使用任何代词或指代词（如"它"、"这个"、"该文档"、"本文"、"文中"、"其"等），必须用具体名称替代
     - 问题必须是完整独立的，脱离上下文也能被理解
     - 问题应该是用户在实际场景中可能会提出的自然问题

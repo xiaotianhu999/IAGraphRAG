@@ -1073,6 +1073,10 @@ export default {
       separatorsLabel: 'Separators',
       separatorsDescription: 'Separators used when chunking documents',
       separatorsPlaceholder: 'Select separators',
+      paragraphAwareLabel: 'Paragraph-Aware Mode',
+      paragraphAwareDescription: 'When enabled, preserves paragraph integrity and splits only at sentence-ending punctuation (。！？；.!?;), never within a sentence at commas',
+      languageLabel: 'Primary Language',
+      languageDescription: 'Primary language for intelligent sentence splitting',
       separators: {
         doubleNewline: 'Double newline (\
 \
@@ -1085,6 +1089,10 @@ export default {
         semicolonCn: 'Chinese semicolon (；)',
         semicolonEn: 'Semicolon (;)',
         space: 'Space ( )'
+      },
+      languages: {
+        chinese: 'Chinese',
+        english: 'English'
       }
     },
     advanced: {

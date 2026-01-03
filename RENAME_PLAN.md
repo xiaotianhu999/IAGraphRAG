@@ -64,9 +64,9 @@ git commit -m "Backup before rename to GraphRAG"
 - **变更内容：**
   ```yaml
   # 镜像名称变更
-  wechatopenai/weknora-app → wechatopenai/graphrag-app
-  wechatopenai/weknora-docreader → wechatopenai/graphrag-docreader
-  wechatopenai/weknora-ui → wechatopenai/graphrag-ui
+  aiplusall/weknora-app → aiplusall/graphrag-app
+  aiplusall/weknora-docreader → aiplusall/graphrag-docreader
+  aiplusall/weknora-ui → aiplusall/graphrag-ui
   
   # 容器名称变更
   WeKnora-* → GraphRAG-*
@@ -186,14 +186,14 @@ go build ./cmd/server
 # docker-compose.yml 和 docker-compose.dev.yml
 
 # 镜像名称（3 处）
-image: wechatopenai/weknora-app:latest
-→ wechatopenai/graphrag-app:latest
+image: aiplusall/weknora-app:latest
+→ aiplusall/graphrag-app:latest
 
-image: wechatopenai/weknora-docreader:latest
-→ wechatopenai/graphrag-docreader:latest
+image: aiplusall/weknora-docreader:latest
+→ aiplusall/graphrag-docreader:latest
 
-image: wechatopenai/weknora-ui:latest
-→ wechatopenai/graphrag-ui:latest
+image: aiplusall/weknora-ui:latest
+→ aiplusall/graphrag-ui:latest
 
 # 容器名称（约 8 处）
 container_name: WeKnora-*
@@ -223,7 +223,7 @@ WeKnora → GraphRAG
 #### Step 7: 修改 Makefile Docker 相关命令
 ```makefile
 # 在 Makefile 中搜索并替换所有 weknora 镜像名称
-wechatopenai/weknora-* → wechatopenai/graphrag-*
+aiplusall/weknora-* → aiplusall/graphrag-*
 ```
 
 ### 阶段三：文档和配置修改（可选但推荐）

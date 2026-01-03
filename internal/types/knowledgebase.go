@@ -101,6 +101,12 @@ type ChunkingConfig struct {
 	ChunkOverlap int `yaml:"chunk_overlap" json:"chunk_overlap"`
 	// Separators
 	Separators []string `yaml:"separators"    json:"separators"`
+	// Paragraph-aware chunking mode (preserves paragraph integrity)
+	ParagraphAware bool `yaml:"paragraph_aware" json:"paragraph_aware"`
+	// Primary language for sentence splitting (zh, en)
+	Language string `yaml:"language" json:"language"`
+	// Sentence-ending punctuation marks
+	SentenceEndPunctuation []string `yaml:"sentence_end_punctuation,omitempty" json:"sentence_end_punctuation,omitempty"`
 	// EnableMultimodal (deprecated, kept for backward compatibility with old data)
 	EnableMultimodal bool `yaml:"enable_multimodal,omitempty" json:"enable_multimodal,omitempty"`
 }
@@ -354,6 +360,18 @@ func (kb *KnowledgeBase) EnsureChunkingDefaults(defaultConfig *ChunkingConfig) {
 		if len(kb.ChunkingConfig.Separators) == 0 {
 			kb.ChunkingConfig.Separators = defaultConfig.Separators
 		}
+		// Set paragraph-aware defaults if not configured
+		if kb.ChunkingConfig.Language == "" {
+			kb.ChunkingConfig.Language = defaultConfig.Language
+			if kb.ChunkingConfig.Language == "" {
+				kb.ChunkingConfig.Language = "zh" // fallback default
+			}
+		}
+		if len(kb.ChunkingConfig.SentenceEndPunctuation) == 0 {
+			kb.ChunkingConfig.SentenceEndPunctuation = defaultConfig.SentenceEndPunctuation
+		}
+		// ParagraphAware defaults to true (new feature)
+		// Only set if not explicitly configured by user
 	}
 }
 

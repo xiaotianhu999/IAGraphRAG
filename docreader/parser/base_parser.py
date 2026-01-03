@@ -346,6 +346,9 @@ class BaseParser(ABC):
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
             separators=self.separators,
+            paragraph_aware=self.chunking_config.paragraph_aware if self.chunking_config else True,
+            language=self.chunking_config.language if self.chunking_config else "zh",
+            sentence_end_punctuation=self.chunking_config.sentence_end_punctuation if self.chunking_config else None,
         )
         chunk_str = splitter.split_text(document.content)
         chunks = self._str_to_chunk(chunk_str)

@@ -5,6 +5,7 @@ This module provides text splitting functionality with support for:
 - Protected regex patterns (e.g., math formulas, images, links, tables)
 - Header tracking for context preservation
 - Smart merging with overlap handling
+- Paragraph-aware splitting (preserves paragraph integrity)
 """
 
 import itertools
@@ -18,6 +19,12 @@ from docreader.splitter.header_hook import (
     HeaderTracker,
 )
 from docreader.utils.split import split_by_char, split_by_sep
+from docreader.utils.sentence_split import (
+    split_chinese_sentences,
+    split_english_sentences,
+    split_paragraphs,
+    split_at_nearest_space,
+)
 
 # Default configuration for text chunking
 DEFAULT_CHUNK_OVERLAP = 100  # Number of tokens to overlap between chunks
@@ -36,6 +43,7 @@ class TextSplitter(BaseModel, Generic[T]):
     - Preserving protected patterns (formulas, tables, code blocks)
     - Tracking headers for context preservation
     - Maintaining text integrity with smart merging
+    - Optionally preserving paragraph boundaries (paragraph_aware mode)
     """
 
     chunk_size: int = Field(description="The token chunk size for each chunk.")
@@ -44,6 +52,20 @@ class TextSplitter(BaseModel, Generic[T]):
     )
     separators: List[str] = Field(
         description="Default separators for splitting into words"
+    )
+
+    # Paragraph-aware chunking mode
+    paragraph_aware: bool = Field(
+        default=True,
+        description="Enable paragraph-aware splitting to preserve paragraph integrity"
+    )
+    language: str = Field(
+        default="zh",
+        description="Primary language for sentence splitting (zh=Chinese, en=English)"
+    )
+    sentence_end_punctuation: List[str] = Field(
+        default_factory=lambda: ["。", "！", "？", "；", ".", "!", "?", ";"],
+        description="Punctuation marks that indicate sentence endings"
     )
 
     # Try to keep the matched characters as a whole.
@@ -67,6 +89,9 @@ class TextSplitter(BaseModel, Generic[T]):
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         separators: List[str] = ["\n", "。", " "],
+        paragraph_aware: bool = True,
+        language: str = "zh",
+        sentence_end_punctuation: List[str] = None,
         protected_regex: List[str] = [
             # math formula - LaTeX style formulas enclosed in $$
             r"\$\$[\s\S]*?\$\$",
@@ -89,6 +114,9 @@ class TextSplitter(BaseModel, Generic[T]):
             chunk_size: Maximum size of each chunk
             chunk_overlap: Number of tokens to overlap between chunks
             separators: List of separators to use for splitting (in priority order)
+            paragraph_aware: Enable paragraph-aware splitting mode
+            language: Primary language (zh or en) for sentence splitting
+            sentence_end_punctuation: List of sentence-ending punctuation marks
             protected_regex: Regex patterns for content that should be kept intact
             length_function: Function to calculate text length (default: character count)
 
@@ -101,10 +129,16 @@ class TextSplitter(BaseModel, Generic[T]):
                 f"({chunk_size}), should be smaller."
             )
 
+        if sentence_end_punctuation is None:
+            sentence_end_punctuation = ["。", "！", "？", "；", ".", "!", "?", ";"]
+
         super().__init__(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             separators=separators,
+            paragraph_aware=paragraph_aware,
+            language=language,
+            sentence_end_punctuation=sentence_end_punctuation,
             protected_regex=protected_regex,
             len_function=length_function,
         )
@@ -125,6 +159,11 @@ class TextSplitter(BaseModel, Generic[T]):
         if text == "":
             return []
 
+        # Use paragraph-aware mode if enabled
+        if self.paragraph_aware:
+            return self._split_text_paragraph_aware(text)
+
+        # Original splitting logic (legacy mode)
         # Step 1: Split text by separators recursively
         splits = self._split(text)
         # Step 2: Extract protected content positions
@@ -138,6 +177,155 @@ class TextSplitter(BaseModel, Generic[T]):
         # Step 4: Merge splits into final chunks with overlap
         chunks = self._merge(splits)
         return chunks
+
+    def _split_text_paragraph_aware(self, text: str) -> List[Tuple[int, int, str]]:
+        """Split text using paragraph-aware mode.
+        
+        This mode:
+        1. Splits text into paragraphs first
+        2. Keeps short paragraphs intact as single chunks
+        3. For long paragraphs, splits at sentence boundaries only
+        4. Never splits within a sentence (only at sentence-ending punctuation)
+        
+        Args:
+            text: The input text to split
+            
+        Returns:
+            List of tuples (start_pos, end_pos, chunk_text) representing each chunk
+        """
+        logger.info(f"Using paragraph-aware splitting mode (language: {self.language})")
+        
+        # Step 1: Split into paragraphs
+        paragraphs = split_paragraphs(text)
+        logger.info(f"Split text into {len(paragraphs)} paragraphs")
+        
+        all_chunks = []
+        
+        # Step 2: Process each paragraph
+        for para_start, para_end, para_text in paragraphs:
+            para_len = self.len_function(para_text)
+            
+            # If paragraph fits in chunk size, keep it as-is
+            if para_len <= self.chunk_size:
+                all_chunks.append((para_start, para_end, para_text))
+                logger.info(f"Paragraph fits in chunk (length: {para_len})")
+            else:
+                # Paragraph is too long, split into sentences
+                logger.info(f"Paragraph too long ({para_len}), splitting into sentences")
+                para_chunks = self._split_long_paragraph(para_text, para_start)
+                all_chunks.extend(para_chunks)
+        
+        logger.info(f"Created {len(all_chunks)} chunks using paragraph-aware mode")
+        return all_chunks
+
+    def _split_long_paragraph(
+        self, para_text: str, para_start: int
+    ) -> List[Tuple[int, int, str]]:
+        """Split a long paragraph into chunks at sentence boundaries.
+        
+        Strategy:
+        1. Split into sentences at sentence-ending punctuation
+        2. Merge sentences to fill chunks up to chunk_size
+        3. Apply overlap between chunks
+        4. For extremely long sentences, apply fallback splitting
+        
+        Args:
+            para_text: The paragraph text to split
+            para_start: Starting position of paragraph in original text
+            
+        Returns:
+            List of tuples (start_pos, end_pos, chunk_text)
+        """
+        # Split into sentences based on language
+        if self.language == "zh":
+            sentences = split_chinese_sentences(
+                para_text, 
+                self.sentence_end_punctuation,
+                max_len=self.chunk_size * 2
+            )
+        else:
+            sentences = split_english_sentences(
+                para_text,
+                [m for m in self.sentence_end_punctuation if m in [".", "!", "?", ";"]],
+                max_len=self.chunk_size * 2
+            )
+        
+        logger.info(f"Split paragraph into {len(sentences)} sentences")
+        
+        # Handle extremely long sentences (fallback to hard split)
+        processed_sentences = []
+        for sent in sentences:
+            sent_len = self.len_function(sent)
+            if sent_len > self.chunk_size:
+                logger.warning(
+                    f"Sentence exceeds chunk_size ({sent_len} > {self.chunk_size}), "
+                    f"applying hard split at whitespace"
+                )
+                # Split at nearest whitespace
+                parts = []
+                remaining = sent
+                while self.len_function(remaining) > self.chunk_size:
+                    split_pos = split_at_nearest_space(remaining, self.chunk_size, window=100)
+                    parts.append(remaining[:split_pos].strip())
+                    remaining = remaining[split_pos:].strip()
+                if remaining:
+                    parts.append(remaining)
+                processed_sentences.extend(parts)
+            else:
+                processed_sentences.append(sent)
+        
+        # Merge sentences into chunks with overlap
+        chunks = []
+        current_chunk_sentences = []
+        current_length = 0
+        
+        for sent in processed_sentences:
+            sent_len = self.len_function(sent)
+            
+            # Check if adding this sentence would exceed chunk size
+            if current_length + sent_len > self.chunk_size and current_chunk_sentences:
+                # Finalize current chunk
+                chunk_text = "".join(current_chunk_sentences)
+                chunks.append(chunk_text)
+                
+                # Prepare next chunk with overlap
+                if self.chunk_overlap > 0:
+                    # Keep sentences from the end for overlap
+                    overlap_sentences = []
+                    overlap_len = 0
+                    for s in reversed(current_chunk_sentences):
+                        if overlap_len + self.len_function(s) > self.chunk_overlap:
+                            break
+                        overlap_sentences.insert(0, s)
+                        overlap_len += self.len_function(s)
+                    current_chunk_sentences = overlap_sentences
+                    current_length = overlap_len
+                else:
+                    current_chunk_sentences = []
+                    current_length = 0
+            
+            # Add sentence to current chunk
+            current_chunk_sentences.append(sent)
+            current_length += sent_len
+        
+        # Add final chunk
+        if current_chunk_sentences:
+            chunk_text = "".join(current_chunk_sentences)
+            chunks.append(chunk_text)
+        
+        # Convert to position tuples
+        result = []
+        current_pos = para_start
+        for chunk in chunks:
+            # Find actual position in paragraph
+            # This is approximate since we may have modified spacing
+            start = current_pos
+            end = start + len(chunk)
+            result.append((start, end, chunk))
+            # Move position forward, accounting for overlap
+            current_pos = end - self.chunk_overlap if self.chunk_overlap > 0 else end
+        
+        return result
 
     def _split(self, text: str) -> List[str]:
         """Break text into splits that are smaller than chunk size.

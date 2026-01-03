@@ -1414,6 +1414,10 @@ export default {
       separatorsLabel: "分隔符",
       separatorsDescription: "文档分块时使用的分隔符",
       separatorsPlaceholder: "选择分隔符",
+      paragraphAwareLabel: "段落感知模式",
+      paragraphAwareDescription: "启用后将优先保证段落完整性，仅在句尾标点（。！？；）处分块，不会在逗号等句内标点处切分",
+      languageLabel: "主要语言",
+      languageDescription: "用于智能分句的主要语言",
       separators: {
         doubleNewline: "双换行 (\\n\\n)",
         singleNewline: "单换行 (\\n)",
@@ -1423,6 +1427,10 @@ export default {
         semicolonCn: "中文分号 (；)",
         semicolonEn: "英文分号 (;)",
         space: "空格 ( )",
+      },
+      languages: {
+        chinese: "中文",
+        english: "英文",
       },
     },
     advanced: {

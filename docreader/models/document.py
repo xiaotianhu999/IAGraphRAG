@@ -1,7 +1,7 @@
 """Chunk document schema."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,23 @@ class Chunk(BaseModel):
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
         description="metadata fields",
+    )
+
+    # Paragraph-aware chunking metadata
+    paragraph_id: Optional[int] = Field(
+        default=None, description="Index of the paragraph this chunk belongs to"
+    )
+    is_full_paragraph: bool = Field(
+        default=True, description="Whether this chunk contains a complete paragraph"
+    )
+    chunk_index_in_paragraph: int = Field(
+        default=0, description="Index of this chunk within its paragraph (0 if full paragraph)"
+    )
+    paragraph_offset_start: int = Field(
+        default=0, description="Start offset within the paragraph"
+    )
+    paragraph_offset_end: int = Field(
+        default=0, description="End offset within the paragraph"
     )
 
     def to_dict(self, **kwargs: Any) -> Dict[str, Any]:

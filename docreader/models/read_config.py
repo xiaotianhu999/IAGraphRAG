@@ -20,6 +20,19 @@ class ChunkingConfig:
     # Whether to enable multimodal processing (text + images)
     enable_multimodal: bool = False
 
+    # Whether to enable paragraph-aware chunking (preserve paragraph integrity)
+    paragraph_aware: bool = True
+
+    # Primary language for sentence splitting (zh, en)
+    language: str = "zh"
+
+    # Sentence-ending punctuation marks for splitting
+    # For Chinese: 。！？；
+    # For English: . ! ? ;
+    sentence_end_punctuation: list[str] = field(
+        default_factory=lambda: ["。", "！", "？", "；", ".", "!", "?", ";"]
+    )
+
     # Preferred field name going forward
     storage_config: dict[str, str] = field(default_factory=dict)
 
