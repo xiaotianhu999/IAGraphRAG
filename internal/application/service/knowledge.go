@@ -1808,12 +1808,12 @@ func (s *knowledgeService) ProcessQuestionGeneration(ctx context.Context, t *asy
 		return nil
 	}
 
-	// Sort chunks by StartAt for context building
+	// Sort chunks by ChunkIndex for proper ordering (more reliable than StartAt)
 	sort.Slice(textChunks, func(i, j int) bool {
-		return textChunks[i].StartAt < textChunks[j].StartAt
+		return textChunks[i].ChunkIndex < textChunks[j].ChunkIndex
 	})
 
-	// Initialize chat model
+	// Initialize chat model first (needed for metadata extraction)
 	chatModel, err := s.modelService.GetChatModel(ctx, kb.SummaryModelID)
 	if err != nil {
 		logger.Errorf(ctx, "Failed to get chat model: %v", err)
@@ -1826,6 +1826,10 @@ func (s *knowledgeService) ProcessQuestionGeneration(ctx context.Context, t *asy
 		logger.Errorf(ctx, "Failed to get embedding model: %v", err)
 		return fmt.Errorf("failed to get embedding model: %w", err)
 	}
+
+	// Extract document metadata using LLM
+	docMetadata := s.extractDocumentMetadata(ctx, chatModel, textChunks, knowledge.Title)
+	logger.Infof(ctx, "Extracted document metadata for knowledge %s:\n%s", knowledge.ID, docMetadata)
 
 	tenantInfo, err := s.tenantRepo.GetTenantByID(ctx, payload.TenantID)
 	if err != nil {
@@ -1868,7 +1872,7 @@ func (s *knowledgeService) ProcessQuestionGeneration(ctx context.Context, t *asy
 			}
 		}
 
-		questions, err := s.generateQuestionsWithContext(ctx, chatModel, chunk.Content, prevContent, nextContent, knowledge.Title, questionCount)
+		questions, err := s.generateQuestionsWithContext(ctx, chatModel, chunk.Content, prevContent, nextContent, knowledge.Title, docMetadata, questionCount)
 		if err != nil {
 			logger.Warnf(ctx, "Failed to generate questions for chunk %s: %v", chunk.ID, err)
 			continue
@@ -1930,7 +1934,7 @@ func (s *knowledgeService) ProcessQuestionGeneration(ctx context.Context, t *asy
 
 // generateQuestionsWithContext generates questions for a chunk with surrounding context
 func (s *knowledgeService) generateQuestionsWithContext(ctx context.Context,
-	chatModel chat.Chat, content, prevContent, nextContent, docName string, questionCount int,
+	chatModel chat.Chat, content, prevContent, nextContent, docName, docMetadata string, questionCount int,
 ) ([]string, error) {
 	if content == "" || questionCount <= 0 {
 		return nil, nil
@@ -1955,11 +1959,27 @@ func (s *knowledgeService) generateQuestionsWithContext(ctx context.Context,
 		contextSection += "\n"
 	}
 
+	// Prepare DocMetadata string
+	var docMetadataSection string
+	if docMetadata != "" {
+		docMetadataSection = "## 文档元信息（重要：包含日期、版本等关键标识）\n" + docMetadata + "\n\n"
+	}
+
+	// Fallback: If prompt does not contain {{.DocMetadata}} placeholder, append metadata to context
+	// This ensures backward compatibility with old config files
+	if !strings.Contains(prompt, "{{.DocMetadata}}") && docMetadataSection != "" {
+		contextSection = docMetadataSection + contextSection
+	}
+
 	// Replace placeholders
 	prompt = strings.ReplaceAll(prompt, "{{.QuestionCount}}", fmt.Sprintf("%d", questionCount))
 	prompt = strings.ReplaceAll(prompt, "{{.Content}}", content)
 	prompt = strings.ReplaceAll(prompt, "{{.Context}}", contextSection)
+	prompt = strings.ReplaceAll(prompt, "{{.DocMetadata}}", docMetadataSection)
 	prompt = strings.ReplaceAll(prompt, "{{.DocName}}", docName)
+
+	// Log the full prompt for debugging
+	logger.Debugf(ctx, "Generating questions with prompt:\n%s", prompt)
 
 	thinking := false
 	response, err := chatModel.Chat(ctx, []chat.Message{
@@ -1968,7 +1988,7 @@ func (s *knowledgeService) generateQuestionsWithContext(ctx context.Context,
 			Content: prompt,
 		},
 	}, &chat.ChatOptions{
-		Temperature: 0.7,
+		Temperature: 0.3, // Lower temperature for more deterministic output
 		MaxTokens:   512,
 		Thinking:    &thinking,
 	})
@@ -1976,15 +1996,22 @@ func (s *knowledgeService) generateQuestionsWithContext(ctx context.Context,
 		return nil, fmt.Errorf("failed to generate questions: %w", err)
 	}
 
+	// Log the raw response for debugging
+	logger.Debugf(ctx, "Received response from model:\n%s", response.Content)
+
 	// Parse response
 	lines := strings.Split(response.Content, "\n")
 	questions := make([]string, 0, questionCount)
+	// Regex to match list markers like "1.", "1)", "-", "*" at the start of the line
+	listMarkerRe := regexp.MustCompile(`^(\d+[\.\)]|[\-\*])\s*`)
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		line = strings.TrimLeft(line, "0123456789.-*) ")
+		// Replace the list marker with empty string
+		line = listMarkerRe.ReplaceAllString(line, "")
 		line = strings.TrimSpace(line)
 		if line != "" && len(line) > 5 {
 			questions = append(questions, line)
@@ -1997,9 +2024,74 @@ func (s *knowledgeService) generateQuestionsWithContext(ctx context.Context,
 	return questions, nil
 }
 
-// Default prompt for question generation with context support
-const defaultQuestionGenerationPrompt = `你是一个专业的问题生成助手。你的任务是根据给定的【主要内容】生成用户可能会问的相关问题。
+// extractDocumentMetadata uses LLM to extract structured metadata from document
+func (s *knowledgeService) extractDocumentMetadata(ctx context.Context, chatModel chat.Chat, chunks []*types.Chunk, docTitle string) string {
+	if len(chunks) == 0 {
+		return ""
+	}
 
+	// Collect first few chunks (up to 1500 chars) for metadata extraction
+	var contentBuilder strings.Builder
+	for i := 0; i < len(chunks) && i < 5; i++ {
+		contentBuilder.WriteString(chunks[i].Content)
+		contentBuilder.WriteString("\n")
+		if contentBuilder.Len() > 1500 {
+			break
+		}
+	}
+
+	content := contentBuilder.String()
+	if len(content) > 1500 {
+		content = content[:1500]
+	}
+
+	prompt := fmt.Sprintf(`请分析以下文档开头部分，提取关键的文档元信息。这些元信息将用于生成准确的问题。
+
+文档标题：%s
+
+文档开头内容：
+%s
+
+请提取以下信息（如果存在）：
+1. 完整标题（包括括号中的年份、版本等）
+2. 标准简称（用于在问题中指代该文档，如"2018年宪法修正案"）
+3. 日期/时间（如"2018年3月11日"）
+4. 作者或发布机构
+5. 文档类型（如"法律"、"技术规范"、"学术论文"等）
+6. 版本号或修订信息
+7. 其他关键标识信息
+
+输出格式：用简短的文本描述，每项信息占一行，如果某项不存在则省略。
+例如：
+2018年3月11日 第十三届全国人民代表大会第一次会议通过
+文档：中华人民共和国宪法修正案（2018年）
+简称：2018年宪法修正案
+类型：法律文件`, docTitle, content)
+
+	thinking := false
+	response, err := chatModel.Chat(ctx, []chat.Message{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	}, &chat.ChatOptions{
+		Temperature: 0.1, // Very low temperature for consistent extraction
+		MaxTokens:   256,
+		Thinking:    &thinking,
+	})
+
+	if err != nil {
+		logger.Warnf(ctx, "Failed to extract document metadata: %v", err)
+		return ""
+	}
+
+	return strings.TrimSpace(response.Content)
+}
+
+// Default prompt for question generation with context support
+const defaultQuestionGenerationPrompt = `你是一个专业的问题生成助手。你的任务是根据给定的【主要内容】，并结合【文档元信息】（如有），生成用户可能会问的相关问题。
+
+{{.DocMetadata}}
 {{.Context}}
 ## 主要内容（请基于此内容生成问题）
 文档名称：{{.DocName}}
@@ -2008,6 +2100,9 @@ const defaultQuestionGenerationPrompt = `你是一个专业的问题生成助手
 
 ## 核心要求
 - 生成的问题必须与【主要内容】直接相关
+- **关键规则**：如果【主要内容】中缺少具体时间（年份）、版本号或完整专有名词，**必须**参考【文档元信息】进行补充。例如：
+  - 错误："年宪法修正案做了什么修改？"（缺失年份）
+  - 正确："2018年宪法修正案做了什么修改？"（从元信息补充年份）
 - 问题中禁止使用任何代词或指代词（如"它"、"这个"、"该文档"、"本文"、"文中"、"其"等），必须用具体名称替代
 - 问题必须是完整独立的，脱离上下文也能被理解
 - 问题应该是用户在实际场景中可能会提出的自然问题
@@ -2023,7 +2118,16 @@ const defaultQuestionGenerationPrompt = `你是一个专业的问题生成助手
 - 应用类：...可以用于什么场景？
 
 ## 输出格式
-直接输出问题列表，每行一个问题，不要有序号或其他前缀。`
+直接输出问题列表，每行一个问题，不要有序号或其他前缀。
+
+## 错误示例（禁止）
+❌ "年宪法修正案修改了什么？" （缺少年份）
+❌ "该文件规定了什么？" （使用代词）
+❌ "它有什么作用？" （使用代词）
+
+## 正确示例（参考）
+✓ "2018年宪法修正案修改了哪些内容？" （包含年份）
+✓ "中华人民共和国宪法修正案（2018年）新增了什么机构？" （完整标识）`
 
 // GetKnowledgeFile retrieves the physical file associated with a knowledge entry
 func (s *knowledgeService) GetKnowledgeFile(ctx context.Context, id string) (io.ReadCloser, string, error) {
@@ -5860,4 +5964,3 @@ func (s *knowledgeService) SearchKnowledge(ctx context.Context, keyword string, 
 	}
 	return s.repo.SearchKnowledge(ctx, tenantID, keyword, offset, limit)
 }
-
