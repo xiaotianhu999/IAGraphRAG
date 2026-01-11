@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Tencent/WeKnora/internal/errors"
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
-	secutils "github.com/Tencent/WeKnora/internal/utils"
+	"github.com/aiplusall/aiplusall-kb/internal/errors"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
+	secutils "github.com/aiplusall/aiplusall-kb/internal/utils"
 )
 
 // MessageHandler handles HTTP requests related to messages within chat sessions

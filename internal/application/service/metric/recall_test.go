@@ -3,7 +3,7 @@ package metric
 import (
 	"testing"
 
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 func TestRecallMetric_Compute(t *testing.T) {

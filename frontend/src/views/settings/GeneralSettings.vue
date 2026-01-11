@@ -70,7 +70,7 @@ onMounted(() => {
   }
 
   // 从 localStorage 加载主题设置
-  const savedSettings = localStorage.getItem('WeKnora_general_settings')
+  const savedSettings = localStorage.getItem('aiplusall_kb_general_settings')
   if (savedSettings) {
     try {
       const settings = JSON.parse(savedSettings)
@@ -89,7 +89,7 @@ const handleLanguageChange = () => {
   localStorage.setItem('locale', localLanguage.value)
   
   // 同时更新 general_settings 中的语言
-  const savedSettings = localStorage.getItem('WeKnora_general_settings')
+  const savedSettings = localStorage.getItem('aiplusall_kb_general_settings')
   let settings = {}
   if (savedSettings) {
     try {
@@ -97,7 +97,7 @@ const handleLanguageChange = () => {
     } catch (e) {}
   }
   settings = { ...settings, language: localLanguage.value }
-  localStorage.setItem('WeKnora_general_settings', JSON.stringify(settings))
+  localStorage.setItem('aiplusall_kb_general_settings', JSON.stringify(settings))
   
   MessagePlugin.success(t('language.languageSaved'))
 }
@@ -107,7 +107,7 @@ const handleThemeChange = () => {
   // 应用主题到 DOM
   document.documentElement.setAttribute('theme-mode', localTheme.value)
   
-  const savedSettings = localStorage.getItem('WeKnora_general_settings')
+  const savedSettings = localStorage.getItem('aiplusall_kb_general_settings')
   let settings = {}
   if (savedSettings) {
     try {
@@ -115,7 +115,7 @@ const handleThemeChange = () => {
     } catch (e) {}
   }
   settings = { ...settings, theme: localTheme.value }
-  localStorage.setItem('WeKnora_general_settings', JSON.stringify(settings))
+  localStorage.setItem('aiplusall_kb_general_settings', JSON.stringify(settings))
   MessagePlugin.success(t('common.success'))
 }
 </script>

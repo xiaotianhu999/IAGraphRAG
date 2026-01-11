@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // RetrieveGraphRepository is a repository for retrieving graphs

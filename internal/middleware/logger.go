@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/types"
-	secutils "github.com/Tencent/WeKnora/internal/utils"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	secutils "github.com/aiplusall/aiplusall-kb/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

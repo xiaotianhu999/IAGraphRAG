@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Tencent/WeKnora/internal/models/utils/ollama"
-	"github.com/Tencent/WeKnora/internal/runtime"
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/models/utils/ollama"
+	"github.com/aiplusall/aiplusall-kb/internal/runtime"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // Tool represents a function/tool definition

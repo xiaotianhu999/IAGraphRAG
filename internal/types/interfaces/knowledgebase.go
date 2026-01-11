@@ -7,7 +7,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // KnowledgeBaseService defines the knowledge base service interface

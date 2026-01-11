@@ -16,18 +16,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tencent/WeKnora/docreader/client"
-	"github.com/Tencent/WeKnora/docreader/proto"
-	"github.com/Tencent/WeKnora/internal/application/service/retriever"
-	"github.com/Tencent/WeKnora/internal/config"
-	werrors "github.com/Tencent/WeKnora/internal/errors"
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/models/chat"
-	"github.com/Tencent/WeKnora/internal/models/embedding"
-	"github.com/Tencent/WeKnora/internal/tracing"
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
-	secutils "github.com/Tencent/WeKnora/internal/utils"
+	"github.com/aiplusall/aiplusall-kb/docreader/client"
+	"github.com/aiplusall/aiplusall-kb/docreader/proto"
+	"github.com/aiplusall/aiplusall-kb/internal/application/service/retriever"
+	"github.com/aiplusall/aiplusall-kb/internal/config"
+	werrors "github.com/aiplusall/aiplusall-kb/internal/errors"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/models/chat"
+	"github.com/aiplusall/aiplusall-kb/internal/models/embedding"
+	"github.com/aiplusall/aiplusall-kb/internal/tracing"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
+	secutils "github.com/aiplusall/aiplusall-kb/internal/utils"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
@@ -2365,7 +2365,7 @@ func (s *knowledgeService) CloneKnowledgeBase(ctx context.Context, srcID, dstID 
 		g.Go(func() error {
 			err := s.DeleteKnowledgeList(gctx, ids)
 			if err != nil {
-				logger.Errorf(gctx, "delete partial knowledge %v: %w", ids, err)
+				logger.Errorf(gctx, "delete partial knowledge %v: %v", ids, err)
 				return err
 			}
 			return nil
@@ -2384,12 +2384,12 @@ func (s *knowledgeService) CloneKnowledgeBase(ctx context.Context, srcID, dstID 
 		g.Go(func() error {
 			srcKn, err := s.repo.GetKnowledgeByID(gctx, srcKB.TenantID, knowledge)
 			if err != nil {
-				logger.Errorf(gctx, "get knowledge %s: %w", knowledge, err)
+				logger.Errorf(gctx, "get knowledge %s: %v", knowledge, err)
 				return err
 			}
 			err = s.cloneKnowledge(gctx, srcKn, dstKB)
 			if err != nil {
-				logger.Errorf(gctx, "clone knowledge %s: %w", knowledge, err)
+				logger.Errorf(gctx, "clone knowledge %s: %v", knowledge, err)
 				return err
 			}
 			return nil

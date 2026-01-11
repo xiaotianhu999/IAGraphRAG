@@ -3,8 +3,8 @@ package chatpipline
 import (
 	"context"
 
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 // PluginChatCompletion implements chat completion functionality

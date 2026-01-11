@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 // memoryStreamData holds stream events in memory

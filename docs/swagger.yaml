@@ -1762,7 +1762,7 @@ definitions:
 info:
   contact:
     name: WeKnora Github
-    url: https://github.com/Tencent/WeKnora
+    url: https://github.com/aiplusall/aiplusall-kb
   description: WeKnora 知识库管理系统 API 文档
   termsOfService: http://swagger.io/terms/
   title: WeKnora API

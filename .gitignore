@@ -19,14 +19,20 @@ node_modules/
 /dist/
 /build/
 *.log
+*.zip
+*.exe
+protoc/
+config/config.yaml.backup
+config/config.yaml.original
 
 # 临时文件
 tmp/
 temp/
 logs/
 *.pid
+.history/
 
-WeKnora
+aiplusall-kb
 /models/
 test/data/mswag.txt
 data/files/

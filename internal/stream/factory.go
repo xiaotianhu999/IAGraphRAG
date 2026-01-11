@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 // 流管理器类型

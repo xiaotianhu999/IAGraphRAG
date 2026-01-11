@@ -520,13 +520,13 @@ const handleLogin = async () => {
 
     if (response.success) {
       // Save user info and token
-      if (response.user && response.tenant && response.token) {
+      if (response.user && response.token) {
           authStore.setUser({
             id: response.user.id || '',
             username: response.user.username || '',
             email: response.user.email || '',
             avatar: response.user.avatar,
-            tenant_id: String(response.tenant.id) || '',
+            tenant_id: String(response.user.tenant_id) || '',
             role: response.user.role || 'user',
             can_access_all_tenants: response.user.can_access_all_tenants || false,
             menu_config: response.user.menu_config || [],
@@ -537,22 +537,54 @@ const handleLogin = async () => {
           if (response.refresh_token) {
             authStore.setRefreshToken(response.refresh_token)
           }
-          authStore.setTenant({
-            id: String(response.tenant.id) || '',
-            name: response.tenant.name || '',
-            api_key: response.tenant.api_key || '',
-            owner_id: response.user.id || '',
-            menu_config: response.tenant.menu_config || [],
-            created_at: response.tenant.created_at || new Date().toISOString(),
-            updated_at: response.tenant.updated_at || new Date().toISOString()
-          })
+          
+          // Set tenant info if available, otherwise create a minimal tenant object
+          if (response.tenant) {
+            authStore.setTenant({
+              id: String(response.tenant.id) || '',
+              name: response.tenant.name || '',
+              api_key: response.tenant.api_key || '',
+              owner_id: response.user.id || '',
+              menu_config: response.tenant.menu_config || [],
+              created_at: response.tenant.created_at || new Date().toISOString(),
+              updated_at: response.tenant.updated_at || new Date().toISOString()
+            })
+          } else {
+            // Create minimal tenant object from user info
+            authStore.setTenant({
+              id: String(response.user.tenant_id) || '',
+              name: 'Default Tenant',
+              api_key: '',
+              owner_id: response.user.id || '',
+              menu_config: [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          }
         }
       
       MessagePlugin.success(t('auth.loginSuccess'))
 
       // Wait for state update before redirect
       await nextTick()
-      router.replace('/platform/knowledge-bases')
+      
+      // Debug: Check auth state before redirect
+      console.log('Auth state after login:', {
+        isLoggedIn: authStore.isLoggedIn,
+        user: authStore.user,
+        tenant: authStore.tenant,
+        token: !!authStore.token,
+        isAdmin: authStore.isAdmin,
+        canAccessAllTenants: authStore.canAccessAllTenants
+      })
+      
+      // Ensure menu config is set
+      authStore.ensureMenuConfig()
+      
+      // Force redirect
+      console.log('Attempting redirect to /platform/knowledge-bases')
+      await router.replace('/platform/knowledge-bases')
+      console.log('Redirect completed')
     } else {
       MessagePlugin.error(response.message || t('auth.loginError'))
     }

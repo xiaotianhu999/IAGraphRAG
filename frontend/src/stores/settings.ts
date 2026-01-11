@@ -95,7 +95,7 @@ const defaultSettings: Settings = {
 export const useSettingsStore = defineStore("settings", {
   state: () => ({
     // 从本地存储加载设置，如果没有则使用默认设置
-    settings: JSON.parse(localStorage.getItem("WeKnora_settings") || JSON.stringify(defaultSettings)),
+    settings: JSON.parse(localStorage.getItem("aiplusall_kb_settings") || JSON.stringify(defaultSettings)),
   }),
 
   getters: {
@@ -131,7 +131,7 @@ export const useSettingsStore = defineStore("settings", {
     saveSettings(settings: Settings) {
       this.settings = { ...settings };
       // 保存到localStorage
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
 
     // 获取设置
@@ -157,25 +157,25 @@ export const useSettingsStore = defineStore("settings", {
     // 启用/禁用 Agent
     toggleAgent(enabled: boolean) {
       this.settings.isAgentEnabled = enabled;
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 更新 Agent 配置
     updateAgentConfig(config: Partial<AgentConfig>) {
       this.settings.agentConfig = { ...this.settings.agentConfig, ...config };
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
 
     updateConversationModels(models: Partial<ConversationModels>) {
       const current = this.settings.conversationModels || defaultSettings.conversationModels;
       this.settings.conversationModels = { ...current, ...models };
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 更新模型配置
     updateModelConfig(config: Partial<ModelConfig>) {
       this.settings.modelConfig = { ...this.settings.modelConfig, ...config };
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 添加模型
@@ -192,7 +192,7 @@ export const useSettingsStore = defineStore("settings", {
       }
       models.push(model);
       this.settings.modelConfig[key] = models as any;
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 更新模型
@@ -207,7 +207,7 @@ export const useSettingsStore = defineStore("settings", {
         }
         models[index] = { ...models[index], ...updates };
         this.settings.modelConfig[key] = models as any;
-        localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+        localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
       }
     },
     
@@ -222,7 +222,7 @@ export const useSettingsStore = defineStore("settings", {
         models[0].isDefault = true;
       }
       this.settings.modelConfig[key] = models as any;
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 设置默认模型
@@ -231,26 +231,26 @@ export const useSettingsStore = defineStore("settings", {
       const models = [...this.settings.modelConfig[key]] as ModelItem[];
       models.forEach(m => m.isDefault = (m.id === modelId));
       this.settings.modelConfig[key] = models as any;
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 更新 Ollama 配置
     updateOllamaConfig(config: Partial<OllamaConfig>) {
       this.settings.ollamaConfig = { ...this.settings.ollamaConfig, ...config };
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 选择知识库（替换整个列表）
     selectKnowledgeBases(kbIds: string[]) {
       this.settings.selectedKnowledgeBases = kbIds;
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 添加单个知识库
     addKnowledgeBase(kbId: string) {
       if (!this.settings.selectedKnowledgeBases.includes(kbId)) {
         this.settings.selectedKnowledgeBases.push(kbId);
-        localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+        localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
       }
     },
     
@@ -258,13 +258,13 @@ export const useSettingsStore = defineStore("settings", {
     removeKnowledgeBase(kbId: string) {
       this.settings.selectedKnowledgeBases = 
         this.settings.selectedKnowledgeBases.filter((id: string) => id !== kbId);
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 清空知识库选择
     clearKnowledgeBases() {
       this.settings.selectedKnowledgeBases = [];
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     // 获取选中的知识库列表
@@ -275,7 +275,7 @@ export const useSettingsStore = defineStore("settings", {
     // 启用/禁用网络搜索
     toggleWebSearch(enabled: boolean) {
       this.settings.webSearchEnabled = enabled;
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
 
     // File selection actions
@@ -283,19 +283,19 @@ export const useSettingsStore = defineStore("settings", {
       if (!this.settings.selectedFiles) this.settings.selectedFiles = [];
       if (!this.settings.selectedFiles.includes(fileId)) {
         this.settings.selectedFiles.push(fileId);
-        localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+        localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
       }
     },
 
     removeFile(fileId: string) {
       if (!this.settings.selectedFiles) return;
       this.settings.selectedFiles = this.settings.selectedFiles.filter((id: string) => id !== fileId);
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
 
     clearFiles() {
       this.settings.selectedFiles = [];
-      localStorage.setItem("WeKnora_settings", JSON.stringify(this.settings));
+      localStorage.setItem("aiplusall_kb_settings", JSON.stringify(this.settings));
     },
     
     getSelectedFiles(): string[] {

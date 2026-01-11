@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Tencent/WeKnora/internal/config"
-	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/config"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 )

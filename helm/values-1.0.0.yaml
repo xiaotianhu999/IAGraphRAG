@@ -1,0 +1,81 @@
+# aiplusall-kb Helm Values for Production
+
+image:
+  registry: wechatopenai
+  app:
+    repository: aiplusall-kb-app
+    tag: 1.0.0
+  docreader:
+    repository: aiplusall-kb-docreader
+    tag: 1.0.0
+  ui:
+    repository: aiplusall-kb-ui
+    tag: 1.0.0
+
+replicaCount:
+  app: 3
+  docreader: 2
+
+resources:
+  app:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+  docreader:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClassName: fast-ssd
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: api.aiplusall-kb.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: aiplusall-kb-tls
+      hosts:
+        - api.aiplusall-kb.example.com
+
+postgresql:
+  enabled: true
+  auth:
+    username: aiplusall_kb
+    password: CHANGE_ME
+    database: aiplusall_kb_prod
+
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: CHANGE_ME
+
+qdrant:
+  enabled: true
+  apiKey: CHANGE_ME
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true

@@ -103,9 +103,9 @@ Supported LLM backends:
   DOCUMENTATION
 --------------------------------------------------------------------------------
 
-  GitHub:  https://github.com/Tencent/WeKnora
-  API Docs: https://github.com/Tencent/WeKnora/blob/main/docs/API.md
-  FAQ:     https://github.com/Tencent/WeKnora/blob/main/docs/QA.md
+  GitHub:  https://github.com/aiplusall/aiplusall-kb
+  API Docs: https://github.com/aiplusall/aiplusall-kb/blob/main/docs/API.md
+  FAQ:     https://github.com/aiplusall/aiplusall-kb/blob/main/docs/QA.md
 
 --------------------------------------------------------------------------------
   TROUBLESHOOTING

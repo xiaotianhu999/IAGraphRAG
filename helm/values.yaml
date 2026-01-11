@@ -1,7 +1,7 @@
 # Copyright 2025 Tencent
 # SPDX-License-Identifier: MIT
 #
-# WeKnora Helm Chart Values
+# aiplusall-kb Helm Chart Values
 #
 # Best Practices References:
 # - https://helm.sh/docs/chart_best_practices/values/
@@ -59,7 +59,7 @@ app:
 
   image:
     # -- Image repository
-    repository: wechatopenai/weknora-app
+    repository: wechatopenai/aiplusall-kb-app
     # -- Image tag (defaults to Chart.appVersion if empty)
     tag: ""
     # -- Image pull policy
@@ -150,7 +150,7 @@ frontend:
 
   image:
     # -- Image repository
-    repository: wechatopenai/weknora-ui
+    repository: wechatopenai/aiplusall-kb-ui
     # -- Image tag
     tag: latest
     # -- Image pull policy
@@ -197,7 +197,7 @@ docreader:
 
   image:
     # -- Image repository
-    repository: wechatopenai/weknora-docreader
+    repository: wechatopenai/aiplusall-kb-docreader
     # -- Image tag
     tag: latest
     # -- Image pull policy
@@ -350,7 +350,7 @@ ingress:
   className: nginx
 
   # -- Ingress hostname
-  host: weknora.example.com
+  host: aiplusall-kb.example.com
 
   # -- TLS configuration
   tls:
@@ -385,7 +385,7 @@ secrets:
   # -- Database password (REQUIRED: change in production)
   dbPassword: ""
   # -- Database name
-  dbName: weknora
+  dbName: aiplusall_kb
   # -- Redis password (REQUIRED: change in production)
   redisPassword: ""
   # -- JWT signing secret (REQUIRED: change in production)

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
 )
 
 // OpenAIEmbedder implements text vectorization functionality using OpenAI API

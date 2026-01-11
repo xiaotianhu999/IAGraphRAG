@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/models/utils/ollama"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/models/utils/ollama"
 	ollamaapi "github.com/ollama/ollama/api"
 )
 

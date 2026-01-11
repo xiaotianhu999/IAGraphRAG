@@ -1,5 +1,5 @@
 #!/bin/bash
-# 该脚本用于从源码构建WeKnora的所有Docker镜像
+# 该脚本用于从源码构建aiplusall-kb的所有Docker镜像
 
 # 设置颜色
 GREEN='\033[0;32m'
@@ -18,7 +18,7 @@ SCRIPT_NAME=$(basename "$0")
 
 # 显示帮助信息
 show_help() {
-    echo -e "${GREEN}WeKnora 镜像构建脚本 v${VERSION}${NC}"
+    echo -e "${GREEN}aiplusall-kb 镜像构建脚本 v${VERSION}${NC}"
     echo -e "${GREEN}用法:${NC} $0 [选项]"
     echo "选项:"
     echo "  -h, --help     显示帮助信息"
@@ -33,7 +33,7 @@ show_help() {
 
 # 显示版本信息
 show_version() {
-    echo -e "${GREEN}WeKnora 镜像构建脚本 v${VERSION}${NC}"
+    echo -e "${GREEN}aiplusall-kb 镜像构建脚本 v${VERSION}${NC}"
     exit 0
 }
 
@@ -125,7 +125,7 @@ get_version_info() {
 
 # 构建应用镜像
 build_app_image() {
-    log_info "构建应用镜像 (weknora-app)..."
+    log_info "构建应用镜像 (aiplusall-kb-app)..."
     
     cd "$PROJECT_ROOT"
     
@@ -142,7 +142,7 @@ build_app_image() {
         --build-arg BUILD_TIME_ARG="$BUILD_TIME" \
         --build-arg GO_VERSION_ARG="$GO_VERSION" \
         -f docker/Dockerfile.app \
-        -t wechatopenai/weknora-app:latest \
+        -t wechatopenai/aiplusall-kb-app:latest \
         .
     
     if [ $? -eq 0 ]; then
@@ -156,7 +156,7 @@ build_app_image() {
 
 # 构建文档读取器镜像
 build_docreader_image() {
-    log_info "构建文档读取器镜像 (weknora-docreader)..."
+    log_info "构建文档读取器镜像 (aiplusall-kb-docreader)..."
     
     cd "$PROJECT_ROOT"
     
@@ -165,7 +165,7 @@ build_docreader_image() {
         --build-arg PLATFORM=$PLATFORM \
         --build-arg TARGETARCH=$TARGETARCH \
         -f docker/Dockerfile.docreader \
-        -t wechatopenai/weknora-docreader:latest \
+        -t wechatopenai/aiplusall-kb-docreader:latest \
         .
     
     if [ $? -eq 0 ]; then
@@ -179,14 +179,14 @@ build_docreader_image() {
 
 # 构建前端镜像
 build_frontend_image() {
-    log_info "构建前端镜像 (weknora-ui)..."
+    log_info "构建前端镜像 (aiplusall-kb-ui)..."
     
     cd "$PROJECT_ROOT"
     
     docker build \
         --platform $PLATFORM \
         -f frontend/Dockerfile \
-        -t wechatopenai/weknora-ui:latest \
+        -t wechatopenai/aiplusall-kb-ui:latest \
         frontend/
     
     if [ $? -eq 0 ]; then
@@ -250,25 +250,25 @@ build_all_images() {
 
 # 清理本地镜像
 clean_images() {
-    log_info "清理本地WeKnora镜像..."
+    log_info "清理本地aiplusall-kb镜像..."
     
     # 停止相关容器
     log_info "停止相关容器..."
-    docker stop $(docker ps -q --filter "ancestor=wechatopenai/weknora-app:latest" 2>/dev/null) 2>/dev/null || true
-    docker stop $(docker ps -q --filter "ancestor=wechatopenai/weknora-docreader:latest" 2>/dev/null) 2>/dev/null || true
-    docker stop $(docker ps -q --filter "ancestor=wechatopenai/weknora-ui:latest" 2>/dev/null) 2>/dev/null || true
+    docker stop $(docker ps -q --filter "ancestor=wechatopenai/aiplusall-kb-app:latest" 2>/dev/null) 2>/dev/null || true
+    docker stop $(docker ps -q --filter "ancestor=wechatopenai/aiplusall-kb-docreader:latest" 2>/dev/null) 2>/dev/null || true
+    docker stop $(docker ps -q --filter "ancestor=wechatopenai/aiplusall-kb-ui:latest" 2>/dev/null) 2>/dev/null || true
     
     # 删除相关容器
     log_info "删除相关容器..."
-    docker rm $(docker ps -aq --filter "ancestor=wechatopenai/weknora-app:latest" 2>/dev/null) 2>/dev/null || true
-    docker rm $(docker ps -aq --filter "ancestor=wechatopenai/weknora-docreader:latest" 2>/dev/null) 2>/dev/null || true
-    docker rm $(docker ps -aq --filter "ancestor=wechatopenai/weknora-ui:latest" 2>/dev/null) 2>/dev/null || true
+    docker rm $(docker ps -aq --filter "ancestor=wechatopenai/aiplusall-kb-app:latest" 2>/dev/null) 2>/dev/null || true
+    docker rm $(docker ps -aq --filter "ancestor=wechatopenai/aiplusall-kb-docreader:latest" 2>/dev/null) 2>/dev/null || true
+    docker rm $(docker ps -aq --filter "ancestor=wechatopenai/aiplusall-kb-ui:latest" 2>/dev/null) 2>/dev/null || true
     
     # 删除镜像
     log_info "删除本地镜像..."
-    docker rmi wechatopenai/weknora-app:latest 2>/dev/null || true
-    docker rmi wechatopenai/weknora-docreader:latest 2>/dev/null || true
-    docker rmi wechatopenai/weknora-ui:latest 2>/dev/null || true
+    docker rmi wechatopenai/aiplusall-kb-app:latest 2>/dev/null || true
+    docker rmi wechatopenai/aiplusall-kb-docreader:latest 2>/dev/null || true
+    docker rmi wechatopenai/aiplusall-kb-ui:latest 2>/dev/null || true
     
     docker image prune -f
     

@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -112,7 +112,7 @@ func (r *tenantRepository) AdjustStorageUsed(ctx context.Context, tenantID uint6
 		tenant.StorageUsed += delta
 		// 保存更新并验证业务规则
 		if tenant.StorageUsed < 0 {
-			logger.Error(ctx, "tenant storage used is negative %s: %d", tenant.ID, tenant.StorageUsed)
+			logger.Errorf(ctx, "tenant storage used is negative %v: %d", tenant.ID, tenant.StorageUsed)
 			tenant.StorageUsed = 0
 		}
 

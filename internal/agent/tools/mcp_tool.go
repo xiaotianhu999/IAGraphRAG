@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/mcp"
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/mcp"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // MCPTool wraps an MCP service tool to implement the Tool interface

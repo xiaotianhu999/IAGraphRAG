@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 	"github.com/google/uuid"
 	"github.com/tencentyun/cos-go-sdk-v5"
 )

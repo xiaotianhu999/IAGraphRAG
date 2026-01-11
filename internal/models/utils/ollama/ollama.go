@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
 	"github.com/ollama/ollama/api"
 )
 

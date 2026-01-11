@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/common"
-	"github.com/Tencent/WeKnora/internal/config"
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/models/chat"
-	"github.com/Tencent/WeKnora/internal/models/utils"
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/common"
+	"github.com/aiplusall/aiplusall-kb/internal/config"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/models/chat"
+	"github.com/aiplusall/aiplusall-kb/internal/models/utils"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 )

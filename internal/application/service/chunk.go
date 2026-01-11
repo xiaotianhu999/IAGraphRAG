@@ -1,4 +1,4 @@
-// Package service provides business logic implementations for WeKnora application
+// Package service provides business logic implementations for aiplusall-kb application
 // This package contains service layer implementations that coordinate between
 // repositories and handlers, applying business rules and transaction management
 package service
@@ -7,10 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Tencent/WeKnora/internal/application/service/retriever"
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/application/service/retriever"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 // chunkService implements the ChunkService interface
@@ -223,6 +223,8 @@ func (s *chunkService) UpdateChunks(ctx context.Context, chunks []*types.Chunk) 
 //   - error: Any error encountered during deletion
 func (s *chunkService) DeleteChunk(ctx context.Context, id string) error {
 	tenantID := ctx.Value(types.TenantIDContextKey).(uint64)
+	
+	// 1. Soft delete PostgreSQL record
 	err := s.chunkRepository.DeleteChunk(ctx, tenantID, id)
 	if err != nil {
 		logger.ErrorWithFields(ctx, err, map[string]interface{}{
@@ -230,6 +232,31 @@ func (s *chunkService) DeleteChunk(ctx context.Context, id string) error {
 		})
 		return err
 	}
+	
+	// 2. Soft delete vector index (set is_enabled to false)
+	// This ensures the chunk won't appear in vector search results
+	chunkStatusMap := map[string]bool{id: false}
+	tenantInfo := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+	retrieveEngine, err := retriever.NewCompositeRetrieveEngine(
+		s.retrieveEngine,
+		tenantInfo.GetEffectiveEngines(),
+	)
+	if err != nil {
+		logger.ErrorWithFields(ctx, err, map[string]interface{}{
+			"chunk_id":  id,
+			"operation": "soft_delete_vector",
+			"tenant_id": tenantID,
+		})
+		// Don't block the main flow, just log the error
+	} else if err := retrieveEngine.BatchUpdateChunkEnabledStatus(ctx, chunkStatusMap); err != nil {
+		logger.ErrorWithFields(ctx, err, map[string]interface{}{
+			"chunk_id":  id,
+			"operation": "soft_delete_vector",
+			"tenant_id": tenantID,
+		})
+		// Don't block the main flow, just log the error
+	}
+	
 	logger.Info(ctx, "Chunk deleted successfully")
 	return nil
 }
@@ -280,7 +307,19 @@ func (s *chunkService) DeleteChunksByKnowledgeID(ctx context.Context, knowledgeI
 	tenantID := ctx.Value(types.TenantIDContextKey).(uint64)
 	logger.Infof(ctx, "Tenant ID: %d", tenantID)
 
-	err := s.chunkRepository.DeleteChunksByKnowledgeID(ctx, tenantID, knowledgeID)
+	// 1. Get all chunk IDs before soft deletion
+	chunks, err := s.chunkRepository.ListChunksByKnowledgeID(ctx, tenantID, knowledgeID)
+	if err != nil {
+		logger.ErrorWithFields(ctx, err, map[string]interface{}{
+			"knowledge_id": knowledgeID,
+			"tenant_id":    tenantID,
+			"operation":    "get_chunks",
+		})
+		return err
+	}
+
+	// 2. Soft delete PostgreSQL records
+	err = s.chunkRepository.DeleteChunksByKnowledgeID(ctx, tenantID, knowledgeID)
 	if err != nil {
 		logger.ErrorWithFields(ctx, err, map[string]interface{}{
 			"knowledge_id": knowledgeID,
@@ -289,7 +328,39 @@ func (s *chunkService) DeleteChunksByKnowledgeID(ctx context.Context, knowledgeI
 		return err
 	}
 
-	logger.Info(ctx, "All chunks under knowledge deleted successfully")
+	// 3. Soft delete vector indices (set is_enabled to false for all chunks)
+	// This ensures deleted chunks won't appear in vector search results
+	if len(chunks) > 0 {
+		chunkStatusMap := make(map[string]bool)
+		for _, chunk := range chunks {
+			chunkStatusMap[chunk.ID] = false
+		}
+		
+		tenantInfo := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+		retrieveEngine, err := retriever.NewCompositeRetrieveEngine(
+			s.retrieveEngine,
+			tenantInfo.GetEffectiveEngines(),
+		)
+		if err != nil {
+			logger.ErrorWithFields(ctx, err, map[string]interface{}{
+				"knowledge_id": knowledgeID,
+				"chunk_count":  len(chunks),
+				"operation":    "soft_delete_vectors",
+				"tenant_id":    tenantID,
+			})
+			// Don't block the main flow, just log the error
+		} else if err := retrieveEngine.BatchUpdateChunkEnabledStatus(ctx, chunkStatusMap); err != nil {
+			logger.ErrorWithFields(ctx, err, map[string]interface{}{
+				"knowledge_id": knowledgeID,
+				"chunk_count":  len(chunks),
+				"operation":    "soft_delete_vectors",
+				"tenant_id":    tenantID,
+			})
+			// Don't block the main flow, just log the error
+		}
+	}
+
+	logger.Infof(ctx, "All chunks under knowledge deleted successfully (count: %d)", len(chunks))
 	return nil
 }
 

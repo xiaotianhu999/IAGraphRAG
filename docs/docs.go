@@ -11,8 +11,8 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "WeKnora Github",
-            "url": "https://github.com/Tencent/WeKnora"
+            "name": "aiplusall-kb Github",
+            "url": "https://github.com/aiplusall/aiplusall-kb"
         },
         "version": "{{.Version}}"
     },

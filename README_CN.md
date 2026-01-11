@@ -18,7 +18,7 @@
     <a href="https://chatbot.weixin.qq.com" target="_blank">
         <img alt="微信对话开放平台" src="https://img.shields.io/badge/微信对话开放平台-5ac725">
     </a>
-    <a href="https://github.com/Tencent/WeKnora/blob/main/LICENSE">
+    <a href="https://github.com/aiplusall/aiplusall-kb/blob/main/LICENSE">
         <img src="https://img.shields.io/badge/License-MIT-ffffff?labelColor=d4eaf7&color=2e6cc4" alt="License">
     </a>
     <a href="./CHANGELOG.md">
@@ -137,8 +137,8 @@ WeKnora 采用现代化模块化设计，构建了一条完整的文档理解与
 
 ```bash
 # 克隆主仓库
-git clone https://github.com/Tencent/WeKnora.git
-cd WeKnora
+git clone https://github.com/aiplusall/aiplusall-kb.git
+cd aiplusall-kb
 ```
 
 #### ② 配置环境变量
@@ -232,7 +232,7 @@ WeKnora 作为[微信对话开放平台](https://chatbot.weixin.qq.com)的核心
 #### 1️⃣克隆储存库
 
 ```
-git clone https://github.com/Tencent/WeKnora
+git clone https://github.com/aiplusall/aiplusall-kb
 ```
 
 #### 2️⃣配置MCP服务器
@@ -382,7 +382,7 @@ WeKnora/
 
 ## 🤝 贡献指南
 
-我们欢迎社区用户参与贡献！如有建议、Bug 或新功能需求，请通过 [Issue](https://github.com/Tencent/WeKnora/issues) 提出，或直接提交 Pull Request。
+我们欢迎社区用户参与贡献！如有建议、Bug 或新功能需求，请通过 [Issue](https://github.com/aiplusall/aiplusall-kb/issues) 提出，或直接提交 Pull Request。
 
 ### 🎯 贡献方式
 

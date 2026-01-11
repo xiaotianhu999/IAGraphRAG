@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 // RetrieveEngineRegistry implements the retrieval engine registry

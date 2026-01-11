@@ -1,6 +1,6 @@
 package metric
 
-import "github.com/Tencent/WeKnora/internal/types"
+import "github.com/aiplusall/aiplusall-kb/internal/types"
 
 // reference: https://github.com/dd-Rebecca/rouge
 

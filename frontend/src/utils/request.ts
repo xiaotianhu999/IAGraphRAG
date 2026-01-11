@@ -20,14 +20,14 @@ const instance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     // 添加JWT token认证
-    const token = localStorage.getItem('weknora_token');
+    const token = localStorage.getItem('aiplusall_kb_token');
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
     
     // 添加跨租户访问请求头（如果选择了其他租户）
-    const selectedTenantId = localStorage.getItem('weknora_selected_tenant_id');
-    const defaultTenantId = localStorage.getItem('weknora_tenant');
+    const selectedTenantId = localStorage.getItem('aiplusall_kb_selected_tenant_id');
+    const defaultTenantId = localStorage.getItem('aiplusall_kb_tenant');
     if (selectedTenantId) {
       try {
         const defaultTenant = defaultTenantId ? JSON.parse(defaultTenantId) : null;
@@ -107,7 +107,7 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       
-      const refreshToken = localStorage.getItem('weknora_refresh_token');
+      const refreshToken = localStorage.getItem('aiplusall_kb_refresh_token');
       
       if (refreshToken) {
         try {
@@ -119,8 +119,8 @@ instance.interceptors.response.use(
             const { token, refreshToken: newRefreshToken } = response.data;
             
             // 更新localStorage中的token
-            localStorage.setItem('weknora_token', token);
-            localStorage.setItem('weknora_refresh_token', newRefreshToken);
+            localStorage.setItem('aiplusall_kb_token', token);
+            localStorage.setItem('aiplusall_kb_refresh_token', newRefreshToken);
             
             // 更新请求头
             originalRequest.headers['Authorization'] = 'Bearer ' + token;
@@ -134,10 +134,10 @@ instance.interceptors.response.use(
           }
         } catch (refreshError) {
           // 刷新失败，清除所有token并跳转到登录页
-          localStorage.removeItem('weknora_token');
-          localStorage.removeItem('weknora_refresh_token');
-          localStorage.removeItem('weknora_user');
-          localStorage.removeItem('weknora_tenant');
+          localStorage.removeItem('aiplusall_kb_token');
+          localStorage.removeItem('aiplusall_kb_refresh_token');
+          localStorage.removeItem('aiplusall_kb_user');
+          localStorage.removeItem('aiplusall_kb_tenant');
           
           processQueue(refreshError, null);
           
@@ -153,9 +153,9 @@ instance.interceptors.response.use(
         }
       } else {
         // 没有refresh token，直接跳转到登录页
-        localStorage.removeItem('weknora_token');
-        localStorage.removeItem('weknora_user');
-        localStorage.removeItem('weknora_tenant');
+        localStorage.removeItem('aiplusall_kb_token');
+        localStorage.removeItem('aiplusall_kb_user');
+        localStorage.removeItem('aiplusall_kb_tenant');
         
         if (!hasRedirectedOn401 && typeof window !== 'undefined') {
           hasRedirectedOn401 = true;

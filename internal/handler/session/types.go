@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // SessionStrategy defines the configuration for a conversation session strategy

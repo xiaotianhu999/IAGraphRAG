@@ -1,7 +1,7 @@
 package metric
 
 import (
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // RecallMetric calculates recall for retrieval evaluation
@@ -18,16 +18,20 @@ func (r *RecallMetric) Compute(metricInput *types.MetricInput) float64 {
 	gts := metricInput.RetrievalGT
 	ids := metricInput.RetrievalIDs
 
-	// Convert ground truth to sets for efficient lookup
-	gtSets := SliceMap(gts, ToSet)
-	// Count total hits across all relevant documents
-	ahit := Fold(gtSets, 0, func(a int, b map[int]struct{}) int { return a + Hit(ids, b) })
-
-	// Handle case with no ground truth
-	if len(gtSets) == 0 {
+	// Average recall across all queries
+	if len(gts) == 0 {
 		return 0.0
 	}
 
-	// Recall = total hits / total relevant documents
-	return float64(ahit) / float64(len(gtSets))
+	sumRecall := 0.0
+	for _, gt := range gts {
+		if len(gt) == 0 {
+			continue
+		}
+		gtSet := ToSet(gt)
+		hits := Hit(ids, gtSet)
+		sumRecall += float64(hits) / float64(len(gt))
+	}
+
+	return sumRecall / float64(len(gts))
 }

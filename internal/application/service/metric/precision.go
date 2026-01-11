@@ -1,7 +1,7 @@
 package metric
 
 import (
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 )
 
 // PrecisionMetric calculates precision for retrieval evaluation
@@ -18,16 +18,20 @@ func (r *PrecisionMetric) Compute(metricInput *types.MetricInput) float64 {
 	gts := metricInput.RetrievalGT
 	ids := metricInput.RetrievalIDs
 
-	// Convert ground truth to sets for efficient lookup
-	gtSets := SliceMap(gts, ToSet)
-	// Count total hits across all queries
-	ahit := Fold(gtSets, 0, func(a int, b map[int]struct{}) int { return a + Hit(ids, b) })
-
-	// Handle case with no ground truth
+	// Average precision across all queries
 	if len(gts) == 0 {
 		return 0.0
 	}
 
-	// Precision = total hits / number of queries
-	return float64(ahit) / float64(len(gts))
+	sumPrecision := 0.0
+	for _, gt := range gts {
+		if len(ids) == 0 {
+			continue
+		}
+		gtSet := ToSet(gt)
+		hits := Hit(ids, gtSet)
+		sumPrecision += float64(hits) / float64(len(ids))
+	}
+
+	return sumPrecision / float64(len(gts))
 }

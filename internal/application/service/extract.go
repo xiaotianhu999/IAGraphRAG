@@ -7,11 +7,11 @@ import (
 	"os"
 	"strings"
 
-	chatpipline "github.com/Tencent/WeKnora/internal/application/service/chat_pipline"
-	"github.com/Tencent/WeKnora/internal/config"
-	"github.com/Tencent/WeKnora/internal/logger"
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	chatpipline "github.com/aiplusall/aiplusall-kb/internal/application/service/chat_pipline"
+	"github.com/aiplusall/aiplusall-kb/internal/config"
+	"github.com/aiplusall/aiplusall-kb/internal/logger"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )

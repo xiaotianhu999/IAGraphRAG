@@ -1,0 +1,66 @@
+# aiplusall-kb 简化配置文件
+# 用于开发环境快速启动
+
+# 服务器配置
+server:
+  port: 8080
+  host: "0.0.0.0"
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 60s
+
+# 数据库配置
+database:
+  driver: postgres
+  host: localhost
+  port: 5432
+  user: legalmind
+  password: kingyan888
+  name: legalmind
+  max_open_connections: 25
+  max_idle_connections: 5
+  connection_max_lifetime: 3600s
+
+# Redis配置
+redis:
+  host: localhost
+  port: 6379
+  password: kingyan888
+  db: 0
+
+# 文档读取器配置
+docreader:
+  addr: localhost:50051
+  timeout: 30s
+
+# 存储配置
+storage:
+  type: minio
+  minio:
+    endpoint: localhost:9000
+    access_key: minioadmin
+    secret_key: kingyan888
+    bucket: legalmind
+    use_ssl: false
+
+# 日志配置
+logging:
+  level: info
+  format: json
+
+# 基础功能配置
+features:
+  enable_registration: true
+  enable_graph_rag: true
+  enable_web_search: false
+  enable_external_search: false
+
+# JWT配置
+jwt:
+  secret: aiplusall-jwt-secret
+  expires_in: 24h
+
+# 租户配置
+tenant:
+  enable_cross_tenant_access: true
+  aes_key: aiplusall-api-key-secret

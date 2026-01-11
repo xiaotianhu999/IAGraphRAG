@@ -2,7 +2,7 @@
 
 # Show help
 help:
-	@echo "WeKnora Makefile 帮助"
+	@echo "aiplusall-kb Makefile 帮助"
 	@echo ""
 	@echo "基础命令:"
 	@echo "  build             构建应用"
@@ -11,9 +11,9 @@ help:
 	@echo "  clean             清理构建文件"
 	@echo ""
 	@echo "Docker 命令:"
-	@echo "  docker-build-app       构建应用 Docker 镜像 (wechatopenai/weknora-app)"
-	@echo "  docker-build-docreader 构建文档读取器镜像 (wechatopenai/weknora-docreader)"
-	@echo "  docker-build-frontend  构建前端镜像 (wechatopenai/weknora-ui)"
+	@echo "  docker-build-app       构建应用 Docker 镜像 (aiplusall/aiplusall-kb-app)"
+	@echo "  docker-build-docreader 构建文档读取器镜像 (aiplusall/aiplusall-kb-docreader)"
+	@echo "  docker-build-frontend  构建前端镜像 (aiplusall/aiplusall-kb-ui)"
 	@echo "  docker-build-all       构建所有 Docker 镜像"
 	@echo "  docker-run            运行 Docker 容器"
 	@echo "  docker-stop           停止 Docker 容器"
@@ -34,6 +34,9 @@ help:
 	@echo "数据库:"
 	@echo "  migrate-up        执行数据库迁移"
 	@echo "  migrate-down      回滚数据库迁移"
+	@echo "  clean-db          清理数据库卷"
+	@echo "  reset-project     重置项目到初始状态（清理所有数据）"
+	@echo "  reset-project-full 完全重置（包括Docker镜像）"
 	@echo ""
 	@echo "开发工具:"
 	@echo "  fmt               格式化代码"
@@ -58,11 +61,11 @@ help:
 	@echo "  dev-frontend      启动前端（本地运行，需先运行 dev-start）"
 
 # Go related variables
-BINARY_NAME=WeKnora
+BINARY_NAME=aiplusall-kb
 MAIN_PATH=./cmd/server
 
 # Docker related variables
-DOCKER_IMAGE=wechatopenai/weknora-app
+DOCKER_IMAGE=aiplusall/aiplusall-kb-app
 DOCKER_TAG=latest
 
 # Platform detection
@@ -107,11 +110,11 @@ docker-build-app:
 
 # Build docreader Docker image
 docker-build-docreader:
-	docker build --platform $(PLATFORM) -f docker/Dockerfile.docreader -t wechatopenai/weknora-docreader:latest .
+	docker build --platform $(PLATFORM) -f docker/Dockerfile.docreader -t aiplusall/aiplusall-kb-docreader:latest .
 
 # Build frontend Docker image
 docker-build-frontend:
-	docker build --platform $(PLATFORM) -f frontend/Dockerfile -t wechatopenai/weknora-ui:latest frontend/
+	docker build --platform $(PLATFORM) -f frontend/Dockerfile -t aiplusall/aiplusall-kb-ui:latest frontend/
 
 # Build all Docker images
 docker-build-all: docker-build-app docker-build-docreader docker-build-frontend
@@ -224,12 +227,12 @@ build-prod:
 	COMMIT_ID=$${COMMIT_ID:-unknown}; \
 	BUILD_TIME=$${BUILD_TIME:-unknown}; \
 	GO_VERSION=$${GO_VERSION:-unknown}; \
-	LDFLAGS="-X 'github.com/Tencent/WeKnora/internal/handler.Version=$$VERSION' -X 'github.com/Tencent/WeKnora/internal/handler.CommitID=$$COMMIT_ID' -X 'github.com/Tencent/WeKnora/internal/handler.BuildTime=$$BUILD_TIME' -X 'github.com/Tencent/WeKnora/internal/handler.GoVersion=$$GO_VERSION'"; \
+	LDFLAGS="-X 'github.com/aiplusall/aiplusall-kb/internal/handler.Version=$$VERSION' -X 'github.com/aiplusall/aiplusall-kb/internal/handler.CommitID=$$COMMIT_ID' -X 'github.com/aiplusall/aiplusall-kb/internal/handler.BuildTime=$$BUILD_TIME' -X 'github.com/aiplusall/aiplusall-kb/internal/handler.GoVersion=$$GO_VERSION'"; \
 	go build -ldflags="-w -s $$LDFLAGS" -o $(BINARY_NAME) $(MAIN_PATH)
 
 clean-db:
 	@echo "Cleaning database..."
-	@if [ $$(docker volume ls -q -f name=weknora_postgres-data) ]; then \
+	@if [ $$(docker volume ls -q -f name=aiplusall_kb_postgres-data) ]; then \
 		docker volume rm weknora_postgres-data; \
 	fi
 	@if [ $$(docker volume ls -q -f name=weknora_minio_data) ]; then \
@@ -238,6 +241,59 @@ clean-db:
 	@if [ $$(docker volume ls -q -f name=weknora_redis_data) ]; then \
 		docker volume rm weknora_redis_data; \
 	fi
+
+# Reset project to initial state (clean all data)
+reset-project:
+	@echo "Resetting aiplusall-kb project to initial state..."
+	@echo "This will delete ALL data. Press Ctrl+C to cancel, or press Enter to continue..."
+	@read dummy
+	@echo "Stopping all containers..."
+	-docker-compose down --remove-orphans 2>/dev/null || true
+	-docker-compose -f docker-compose.dev.yml down --remove-orphans 2>/dev/null || true
+	@echo "Removing Docker volumes..."
+	-docker volume rm aiplusall-kb_postgres-data 2>/dev/null || true
+	-docker volume rm aiplusall-kb_minio-data 2>/dev/null || true
+	-docker volume rm aiplusall-kb_redis-data 2>/dev/null || true
+	-docker volume rm aiplusall-kb_neo4j-data 2>/dev/null || true
+	-docker volume rm weknora_postgres-data 2>/dev/null || true
+	-docker volume rm weknora_minio_data 2>/dev/null || true
+	-docker volume rm weknora_redis_data 2>/dev/null || true
+	-docker volume rm weknora_neo4j_data 2>/dev/null || true
+	@echo "Cleaning local storage..."
+	-rm -rf ./data/* 2>/dev/null || true
+	-rm -rf ./tmp/* 2>/dev/null || true
+	-rm -rf ./uploads/* 2>/dev/null || true
+	-rm -rf ./files/* 2>/dev/null || true
+	-rm -rf ./storage/* 2>/dev/null || true
+	@echo "Cleaning temporary files..."
+	-rm -f aiplusall-kb 2>/dev/null || true
+	-rm -rf frontend/node_modules 2>/dev/null || true
+	-rm -rf frontend/dist 2>/dev/null || true
+	-find . -name "*.tmp" -type f -delete 2>/dev/null || true
+	-find . -name "*.log" -type f -delete 2>/dev/null || true
+	@echo "Pruning Docker system..."
+	-docker volume prune -f 2>/dev/null || true
+	@echo ""
+	@echo "✅ Project reset complete!"
+	@echo ""
+	@echo "To start fresh:"
+	@echo "  1. make dev-start    (start infrastructure)"
+	@echo "  2. make migrate-up   (setup database)"
+	@echo "  3. make dev-app      (start backend)"
+	@echo "  4. make dev-frontend (start frontend)"
+
+# Reset project and also remove Docker images
+reset-project-full:
+	@echo "Full reset: removing all data AND Docker images..."
+	@echo "This will delete ALL data and images. Press Ctrl+C to cancel, or press Enter to continue..."
+	@read dummy
+	@$$(MAKE) reset-project
+	@echo "Removing Docker images..."
+	-docker rmi wechatopenai/aiplusall-kb-app:latest 2>/dev/null || true
+	-docker rmi wechatopenai/aiplusall-kb-docreader:latest 2>/dev/null || true
+	-docker rmi wechatopenai/aiplusall-kb-ui:latest 2>/dev/null || true
+	-docker image prune -f 2>/dev/null || true
+	@echo "✅ Full project reset complete!"
 
 # Environment check
 check-env:

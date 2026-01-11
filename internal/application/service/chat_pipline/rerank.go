@@ -7,10 +7,10 @@ import (
 	"math"
 	"strings"
 
-	"github.com/Tencent/WeKnora/internal/models/rerank"
-	"github.com/Tencent/WeKnora/internal/searchutil"
-	"github.com/Tencent/WeKnora/internal/types"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/models/rerank"
+	"github.com/aiplusall/aiplusall-kb/internal/searchutil"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 // PluginRerank implements reranking functionality for chat pipeline

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Tencent/WeKnora/internal/event"
-	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/aiplusall/aiplusall-kb/internal/event"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
 	"github.com/google/uuid"
 )
 

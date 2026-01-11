@@ -1,23 +1,23 @@
 services:
   frontend:
-    image: wechatopenai/weknora-ui:latest
+    image: aiplusall/aiplusall-kb-ui:latest
     build: ./frontend
-    container_name: WeKnora-frontend
+    container_name: aiplusall-kb-frontend
     ports:
       - "${FRONTEND_PORT:-80}:80"
     depends_on:
       app:
         condition: service_healthy
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     restart: unless-stopped
 
   app:
-    image: wechatopenai/weknora-app:latest
+    image: aiplusall/aiplusall-kb-app:latest
     build:
       context: .
       dockerfile: docker/Dockerfile.app
-    container_name: WeKnora-app
+    container_name: aiplusall-kb-app
     ports:
       - "${APP_PORT:-8080}:8080"
     volumes:
@@ -47,7 +47,7 @@ services:
       - DB_NAME=${DB_NAME:-}
       - TZ=Asia/Shanghai
       - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
-      - OTEL_SERVICE_NAME=WeKnora
+      - OTEL_SERVICE_NAME=aiplusall-kb
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
@@ -59,7 +59,7 @@ services:
       - ELASTICSEARCH_INDEX=${ELASTICSEARCH_INDEX:-}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=${QDRANT_PORT:-6334}
-      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-weknora_embeddings}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-aiplusall-kb_embeddings}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-}
       - QDRANT_USE_TLS=${QDRANT_USE_TLS:-false}
       - DOCREADER_ADDR=docreader:50051
@@ -103,17 +103,17 @@ services:
       docreader:
         condition: service_healthy
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   docreader:
-    image: wechatopenai/weknora-docreader:latest
+    image: aiplusall/aiplusall-kb-docreader:latest
     build:
       context: .
       dockerfile: docker/Dockerfile.docreader
-    container_name: WeKnora-docreader
+    container_name: aiplusall-kb-docreader
     ports:
       - "${DOCREADER_PORT:-50051}:50051"
     environment:
@@ -143,7 +143,7 @@ services:
       retries: 3
       start_period: 60s
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -151,7 +151,7 @@ services:
   # 修改的PostgreSQL配置
   postgres:
     image: paradedb/paradedb:v0.18.9-pg17
-    container_name: WeKnora-postgres
+    container_name: aiplusall-kb-postgres
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -159,7 +159,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s # 增加时间间隔
@@ -172,15 +172,15 @@ services:
 
   redis:
     image: redis:7.0-alpine
-    container_name: WeKnora-redis
+    container_name: aiplusall-kb-redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     restart: always
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
 
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: WeKnora-minio
+    container_name: aiplusall-kb-minio
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -196,14 +196,14 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     profiles:
       - minio
       - full
 
   jaeger:
     image: jaegertracing/all-in-one:1.76.0
-    container_name: WeKnora-jaeger
+    container_name: aiplusall-kb-jaeger
     ports:
       - "6831:6831/udp" # Jaeger Thrift接收器
       - "6832:6832/udp" # Jaeger Thrift接收器(Compact)
@@ -220,7 +220,7 @@ services:
     volumes:
       - jaeger_data:/var/lib/jaeger # 持久化 Jaeger 数据
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     restart: unless-stopped
     profiles:
       - jaeger
@@ -228,7 +228,7 @@ services:
 
   neo4j:
     image: neo4j:2025.10.1
-    container_name: WeKnora-neo4j
+    container_name: aiplusall-kb-neo4j
     volumes:
       - neo4j-data:/data
     environment:
@@ -242,28 +242,28 @@ services:
       - "7687:7687"
     restart: always
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     profiles:
       - neo4j
       - full
 
   qdrant:
     image: qdrant/qdrant:v1.16.2
-    container_name: WeKnora-qdrant
+    container_name: aiplusall-kb-qdrant
     ports:
       - "${QDRANT_REST_PORT:-6333}:6333"
       - "${QDRANT_PORT:-6334}:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     networks:
-      - WeKnora-network
+      - aiplusall-kb-network
     restart: unless-stopped
     profiles:
       - qdrant
       - full
 
 networks:
-  WeKnora-network:
+  aiplusall-kb-network:
     driver: bridge
 
 volumes:

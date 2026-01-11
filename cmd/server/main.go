@@ -7,7 +7,7 @@
 // @termsOfService  http://swagger.io/terms/
 //
 // @contact.name   WeKnora Github
-// @contact.url    https://github.com/Tencent/WeKnora
+// @contact.url    https://github.com/aiplusall/aiplusall-kb
 //
 // @BasePath  /api/v1
 //
@@ -34,11 +34,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Tencent/WeKnora/internal/config"
-	"github.com/Tencent/WeKnora/internal/container"
-	"github.com/Tencent/WeKnora/internal/runtime"
-	"github.com/Tencent/WeKnora/internal/tracing"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/config"
+	"github.com/aiplusall/aiplusall-kb/internal/container"
+	"github.com/aiplusall/aiplusall-kb/internal/runtime"
+	"github.com/aiplusall/aiplusall-kb/internal/tracing"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 )
 
 func main() {

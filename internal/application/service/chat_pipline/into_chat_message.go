@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Tencent/WeKnora/internal/types"
-	secutils "github.com/Tencent/WeKnora/internal/utils"
+	"github.com/aiplusall/aiplusall-kb/internal/types"
+	secutils "github.com/aiplusall/aiplusall-kb/internal/utils"
 )
 
 // PluginIntoChatMessage handles the transformation of search results into chat messages

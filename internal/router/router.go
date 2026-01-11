@@ -9,13 +9,13 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/dig"
 
-	"github.com/Tencent/WeKnora/internal/config"
-	"github.com/Tencent/WeKnora/internal/handler"
-	"github.com/Tencent/WeKnora/internal/handler/session"
-	"github.com/Tencent/WeKnora/internal/middleware"
-	"github.com/Tencent/WeKnora/internal/types/interfaces"
+	"github.com/aiplusall/aiplusall-kb/internal/config"
+	"github.com/aiplusall/aiplusall-kb/internal/handler"
+	"github.com/aiplusall/aiplusall-kb/internal/handler/session"
+	"github.com/aiplusall/aiplusall-kb/internal/middleware"
+	"github.com/aiplusall/aiplusall-kb/internal/types/interfaces"
 
-	_ "github.com/Tencent/WeKnora/docs" // swagger docs
+	_ "github.com/aiplusall/aiplusall-kb/docs" // swagger docs
 )
 
 // RouterParams 路由参数

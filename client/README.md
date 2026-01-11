@@ -23,7 +23,7 @@
 ```go
 import (
     "context"
-    "github.com/Tencent/WeKnora/internal/client"
+    "github.com/aiplusall/aiplusall-kb/internal/client"
     "time"
 )
 

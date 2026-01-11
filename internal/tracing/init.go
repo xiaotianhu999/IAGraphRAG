@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	AppName = "WeKnoraApp"
+	AppName = "aiplusall-kb-app"
 )
 
 type Tracer struct {

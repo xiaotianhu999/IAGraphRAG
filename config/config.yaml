@@ -1,7 +1,517 @@
+﻿# aiplusall-kb 知识库改造完整配置文件
+# 版本: 2.0.0
+# 更新时间: 2024-01-10
+
 # 服务器配置
 server:
   port: 8080
   host: "0.0.0.0"
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 60s
+  max_header_bytes: 1048576  # 1MB
+
+# 多层权限模型配置
+permission:
+  # 权限缓存配置
+  cache:
+    enabled: true
+    ttl: 300s  # 5分钟缓存
+    redis_key_prefix: "aiplusall-kb:permission:"
+    max_entries: 100000
+  
+  # 分享权限配置
+  sharing:
+    enabled: true
+    max_shares_per_kb: 100
+    default_expiry_days: 30
+    max_expiry_days: 365
+    allow_public_sharing: false
+    require_approval: true
+    share_url_prefix: "https://aiplusall-kb.com/shared/"
+    
+    # 分享权限级别
+    permission_levels:
+      - "read"
+      - "write" 
+      - "admin"
+    
+    # 分享目标类型
+    target_types:
+      - "user"
+      - "tenant"
+  
+  # 跨租户访问配置
+  cross_tenant:
+    enabled: true
+    audit_all_access: true
+    max_concurrent_access: 1000
+    resource_tenant_isolation: true
+    
+    # 权限级别定义
+    permission_levels:
+      none: 0
+      read: 1
+      write: 2
+      admin: 3
+      owner: 4
+      system_admin: 5
+
+# 多引擎知识图谱配置
+graph_engines:
+  # 默认引擎
+  default_engine: "aiplusall-kb"
+  
+  # 用户私有知识库限制
+  user_private_restrictions:
+    disable_graph: true
+    allowed_search_types: ["vector", "keyword"]
+    max_private_kb: 100
+  
+  # 引擎配置
+  engines:
+    aiplusall-kb:
+      enabled: true
+      name: "aiplusall-kb Native"
+      description: "aiplusall-kb原生知识图谱引擎"
+      version: "1.0.0"
+      
+      # Neo4j配置
+      neo4j:
+        uri: "bolt://localhost:7687"
+        username: "neo4j"
+        password: "${NEO4J_PASSWORD}"
+        max_connections: 50
+        connection_timeout: 30s
+        max_transaction_retry_time: 15s
+      
+      features:
+        - "Neo4j存储"
+        - "实体关系抽取"
+        - "异步重建"
+        - "现有集成"
+      
+      recommended_for:
+        - "快速响应"
+        - "现有集成"
+        - "生产环境"
+      
+      config:
+        batch_size: 100
+        max_entities_per_chunk: 50
+        max_relationships_per_chunk: 100
+        enable_async_rebuild: true
+    
+    graphrag:
+      enabled: true
+      name: "GraphRAG"
+      description: "GraphRAG知识图谱引擎"
+      version: "0.3.0"
+      
+      config:
+        # API配置
+        api_key: "${OPENAI_API_KEY}"
+        api_base: "https://api.openai.com/v1"
+        model_name: "gpt-4o-mini"
+        embedding_model: "text-embedding-3-small"
+        
+        # GraphRAG特定配置
+        community_detection: true
+        max_gleanings: 1
+        chunk_size: 1200
+        chunk_overlap: 100
+        
+        # 社区检测参数
+        community_detection_algorithm: "leiden"
+        community_resolution: 1.0
+        max_community_size: 10
+        
+        # 全局查询配置
+        enable_global_search: true
+        global_search_max_tokens: 8000
+        local_search_max_tokens: 4000
+      
+      features:
+        - "社区检测"
+        - "全局查询"
+        - "层次化分析"
+        - "抽象问题处理"
+      
+      recommended_for:
+        - "大规模分析"
+        - "抽象问题"
+        - "复杂推理"
+      
+      # Python环境配置
+      python:
+        executable: "python3"
+        venv_path: "./venv/graphrag"
+        requirements_file: "./requirements/graphrag.txt"
+    
+    lightrag:
+      enabled: true
+      name: "LightRAG"
+      description: "LightRAG知识图谱引擎"
+      version: "0.1.0"
+      
+      config:
+        # 存储后端配置
+        storage_backend: "neo4j"  # 可选: neo4j, networkx, json
+        
+        # 模型配置
+        embedding_model: "text-embedding-3-small"
+        llm_model: "gpt-4o-mini"
+        api_key: "${OPENAI_API_KEY}"
+        
+        # LightRAG特定配置
+        enable_dual_retrieval: true
+        vector_dim: 1536
+        max_async_tasks: 16
+        
+        # 检索配置
+        top_k: 60
+        max_token_for_text_unit: 4000
+        max_token_for_global_context: 4000
+        max_token_for_local_context: 4000
+      
+      features:
+        - "双层检索"
+        - "多存储后端"
+        - "轻量化部署"
+        - "快速响应"
+      
+      recommended_for:
+        - "轻量化部署"
+        - "快速原型"
+        - "资源受限环境"
+      
+      # Python环境配置
+      python:
+        executable: "python3"
+        venv_path: "./venv/lightrag"
+        requirements_file: "./requirements/lightrag.txt"
+  
+  # 引擎切换配置
+  switching:
+    enable_async_switch: true
+    backup_before_switch: true
+    rollback_on_failure: true
+    switch_timeout: 1800s  # 30分钟
+    
+    # 数据迁移配置
+    migration:
+      batch_size: 1000
+      max_concurrent_migrations: 3
+      verify_after_migration: true
+
+# 法律专业化配置
+legal:
+  # 法律文档分析配置
+  document_analyzer:
+    enabled: true
+    confidence_threshold: 0.8
+    
+    # 文档类型识别
+    document_types:
+      statute: "法律法规"
+      case_law: "判例"
+      contract: "合同"
+      legal_opinion: "法律意见书"
+      regulation: "行政法规"
+      interpretation: "司法解释"
+      precedent: "判例"
+      legal_brief: "法律文书"
+      memorandum: "备忘录"
+      guiding_case: "指导性案例"
+      reference_case: "参考案例"
+      legislative_interpretation: "立法解释"
+    
+    # 法律领域分类
+    legal_domains:
+      contract_law: "合同法"
+      criminal_law: "刑法"
+      civil_law: "民法"
+      commercial_law: "商法"
+      labor_law: "劳动法"
+      intellectual_property: "知识产权法"
+      administrative_law: "行政法"
+      constitutional_law: "宪法"
+      procedural_law: "程序法"
+      international_law: "国际法"
+    
+    # 司法管辖区
+    jurisdictions:
+      - "china"
+      - "beijing"
+      - "shanghai"
+      - "guangdong"
+      - "supreme_court"
+      - "high_court"
+      - "intermediate_court"
+      - "basic_court"
+    
+    # 风险评估配置
+    risk_assessment:
+      enabled: true
+      risk_keywords:
+        high: ["违约", "赔偿", "责任", "处罚", "禁止", "刑罚"]
+        medium: ["限制", "义务", "应当", "必须", "不得"]
+        low: ["建议", "参考", "可以", "鼓励"]
+      
+      # 风险等级阈值
+      risk_thresholds:
+        high: 5
+        medium: 3
+        low: 1
+    
+    # 合规检查配置
+    compliance_check:
+      enabled: true
+      
+      # 敏感信息模式
+      sensitive_patterns:
+        - name: "身份证号"
+          regex: '\d{15}|\d{18}'
+          flag: "contains_personal_info"
+        - name: "手机号"
+          regex: '1[3-9]\d{9}'
+          flag: "contains_personal_info"
+        - name: "银行卡号"
+          regex: '\d{4}-\d{4}-\d{4}-\d{4}'
+          flag: "contains_financial_info"
+      
+      # 文档类型特殊检查
+      document_specific_checks:
+        contract:
+          - "requires_contract_review"
+        case_law:
+          - "requires_case_analysis"
+        guiding_case:
+          - "requires_precedent_analysis"
+  
+  # 法律检索增强配置
+  search_enhancer:
+    enabled: true
+    
+    # 法律相关性评分权重
+    relevance_weights:
+      legal_domain_match: 0.3
+      document_type_match: 0.2
+      jurisdiction_match: 0.2
+      authority_level_match: 0.15
+      temporal_relevance: 0.1
+      keyword_match: 0.05
+    
+    # 法律引用识别
+    citation_patterns:
+      - '《[^》]+》第\d+条'
+      - '第\d+条第\d+款'
+      - '[^》]+法第\d+条'
+      - '\(\d{4}\)[^号]+号'  # 案号模式
+    
+    # 权威性等级
+    authority_levels:
+      national_law: 10
+      supreme_court: 9
+      high_court: 8
+      intermediate_court: 7
+      basic_court: 6
+      administrative_regulation: 5
+      local_regulation: 4
+      normative_document: 3
+  
+  # 合规审计配置
+  compliance_audit:
+    enabled: true
+    log_all_access: true
+    retention_days: 2555  # 7年法定保存期
+    
+    # 敏感操作定义
+    sensitive_operations:
+      - "knowledge_access"
+      - "document_download"
+      - "sharing_create"
+      - "sharing_update"
+      - "sharing_delete"
+      - "permission_change"
+      - "cross_tenant_access"
+      - "legal_document_view"
+      - "case_search"
+      - "external_search"
+    
+    # 审计字段
+    audit_fields:
+      - "user_id"
+      - "tenant_id"
+      - "knowledge_base_id"
+      - "knowledge_id"
+      - "action"
+      - "resource_path"
+      - "legal_domain"
+      - "jurisdiction"
+      - "sensitivity_level"
+      - "compliance_status"
+      - "data_classification"
+      - "ip_address"
+      - "user_agent"
+      - "session_id"
+      - "request_id"
+      - "response_code"
+      - "created_at"
+
+# 外部判例检索配置
+external_case_search:
+  enabled: true
+  
+  # 缓存配置
+  cache:
+    enabled: true
+    ttl: 3600s  # 1小时
+    max_entries: 10000
+    redis_key_prefix: "aiplusall-kb:external_search:"
+  
+  # 搜索引擎配置
+  engines:
+    perplexity_legal:
+      enabled: true
+      name: "Perplexity.ai Legal"
+      description: "基于 Perplexity.ai 的智能法律案例搜索引擎"
+      version: "1.0.0"
+      
+      # API配置
+      api_key: "${PERPLEXITY_API_KEY}"
+      base_url: "https://api.perplexity.ai"
+      model: "sonar-pro"
+      max_tokens: 2048
+      temperature: 0.2
+      timeout: 30s
+      
+      # 法律专业配置
+      legal_prompt_template: |
+        你是一个专业的中国法律案例搜索助手。请根据以下查询条件，搜索中国裁判文书网等权威法律数据库中的相关判例：
+
+        查询条件：
+        %s
+
+        请返回最相关的判例，每个判例包含：
+        1. 案件编号
+        2. 案件标题  
+        3. 审理法院
+        4. 判决日期
+        5. 案由
+        6. 当事人（原告、被告）
+        7. 案件事实摘要
+        8. 争议焦点
+        9. 法院观点
+        10. 判决结果
+        11. 适用法条
+        12. 来源链接
+
+        请确保信息准确，优先返回权威性高、相关性强的判例。
+      
+      features:
+        - "实时网络搜索"
+        - "AI 智能理解"
+        - "多源数据整合"
+        - "自然语言查询"
+        - "法律专业优化"
+      
+      supported_sources:
+        - "裁判文书网"
+        - "法律数据库"
+        - "学术文献"
+        - "新闻报道"
+      
+      limitations:
+        - "依赖网络连接"
+        - "API 调用限制"
+        - "结果准确性依赖 AI 模型"
+    
+    browser_use:
+      enabled: true
+      name: "Browser-use"
+      description: "基于浏览器自动化的法律案例搜索引擎"
+      version: "1.0.0"
+      
+      # 浏览器配置
+      python_path: "python3"
+      script_path: "./scripts/browser_use_search.py"
+      headless_mode: true
+      timeout: 60s
+      request_delay: 2s
+      max_retries: 3
+      user_agent: "Mozilla/5.0 (compatible; aiplusall-kb/1.0)"
+      
+      # 目标网站配置
+      target_sites:
+        - url: "wenshu.court.gov.cn"
+          name: "裁判文书网"
+          priority: 1
+          rate_limit: "2s"
+        - url: "pkulaw.com"
+          name: "北大法宝"
+          priority: 2
+          rate_limit: "3s"
+        - url: "lawinfochina.com"
+          name: "法律信息网"
+          priority: 3
+          rate_limit: "3s"
+      
+      features:
+        - "真实浏览器模拟"
+        - "JavaScript 支持"
+        - "反爬虫绕过"
+        - "多站点搜索"
+        - "结构化数据提取"
+      
+      limitations:
+        - "搜索速度较慢"
+        - "资源消耗较大"
+        - "可能被反爬虫限制"
+        - "需要 Python 环境"
+  
+  # 搜索配置
+  search:
+    max_results: 10
+    max_concurrent: 3
+    request_timeout: 30s
+    default_engines: ["perplexity_legal", "browser_use"]
+    
+    # 触发条件
+    trigger_conditions:
+      min_local_results: 3
+      local_relevance_threshold: 0.7
+      enable_auto_trigger: true
+    
+    # 结果处理
+    deduplication:
+      enabled: true
+      similarity_threshold: 0.9
+      case_number_match: true
+      title_similarity_threshold: 0.8
+    
+    ranking:
+      enabled: true
+      factors:
+        similarity_score: 0.4
+        authority_level: 0.3
+        recency: 0.2
+        confidence: 0.1
+      
+      # 权威性评分
+      authority_scores:
+        supreme_court: 10
+        high_court: 8
+        intermediate_court: 6
+        basic_court: 4
+        arbitration: 5
+    
+    # 导入配置
+    import:
+      auto_extract_metadata: true
+      enable_graph_analysis: true
+      set_as_reference: true
+      default_knowledge_base: "external_cases"
 
 # 对话服务配置
 conversation:
@@ -784,7 +1294,7 @@ knowledge_base:
   
   # VLM（视觉语言模型）默认配置 - 用于多模态文档处理
   vlm:
-    enabled: true              # 是否默认启用多模态功能
+    enabled: false              # 是否默认启用多模态功能
     model_id: ""               # 默认 VLM 模型ID（空表示使用系统配置的默认模型）
   
   # 默认 Embedding 模型ID - 用于向量化文本

@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
   const setUser = (userData: UserInfo) => {
     user.value = userData
     // 保存到localStorage
-    localStorage.setItem('weknora_user', JSON.stringify(userData))
+    localStorage.setItem('aiplusall_kb_user', JSON.stringify(userData))
     
     // 更新菜单配置：优先使用用户的menu_config，如果为空则使用租户的作为兜底
     const menuStore = useMenuStore()
@@ -65,7 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
   const setTenant = (tenantData: TenantInfo) => {
     tenant.value = tenantData
     // 保存到localStorage
-    localStorage.setItem('weknora_tenant', JSON.stringify(tenantData))
+    localStorage.setItem('aiplusall_kb_tenant', JSON.stringify(tenantData))
 
     // 更新菜单配置：优先使用用户的menu_config，如果为空则使用租户的作为兜底
     const menuStore = useMenuStore()
@@ -77,26 +77,26 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setToken = (tokenValue: string) => {
     token.value = tokenValue
-    localStorage.setItem('weknora_token', tokenValue)
+    localStorage.setItem('aiplusall_kb_token', tokenValue)
   }
 
   const setRefreshToken = (refreshTokenValue: string) => {
     refreshToken.value = refreshTokenValue
-    localStorage.setItem('weknora_refresh_token', refreshTokenValue)
+    localStorage.setItem('aiplusall_kb_refresh_token', refreshTokenValue)
   }
 
   const setKnowledgeBases = (kbList: KnowledgeBaseInfo[]) => {
     // 确保输入是数组
     knowledgeBases.value = Array.isArray(kbList) ? kbList : []
-    localStorage.setItem('weknora_knowledge_bases', JSON.stringify(knowledgeBases.value))
+    localStorage.setItem('aiplusall_kb_knowledge_bases', JSON.stringify(knowledgeBases.value))
   }
 
   const setCurrentKnowledgeBase = (kb: KnowledgeBaseInfo | null) => {
     currentKnowledgeBase.value = kb
     if (kb) {
-      localStorage.setItem('weknora_current_kb', JSON.stringify(kb))
+      localStorage.setItem('aiplusall_kb_current_kb', JSON.stringify(kb))
     } else {
-      localStorage.removeItem('weknora_current_kb')
+      localStorage.removeItem('aiplusall_kb_current_kb')
     }
   }
 
@@ -104,13 +104,13 @@ export const useAuthStore = defineStore('auth', () => {
     selectedTenantId.value = tenantId
     selectedTenantName.value = tenantName
     if (tenantId !== null) {
-      localStorage.setItem('weknora_selected_tenant_id', String(tenantId))
+      localStorage.setItem('aiplusall_kb_selected_tenant_id', String(tenantId))
       if (tenantName) {
-        localStorage.setItem('weknora_selected_tenant_name', tenantName)
+        localStorage.setItem('aiplusall_kb_selected_tenant_name', tenantName)
       }
     } else {
-      localStorage.removeItem('weknora_selected_tenant_id')
-      localStorage.removeItem('weknora_selected_tenant_name')
+      localStorage.removeItem('aiplusall_kb_selected_tenant_id')
+      localStorage.removeItem('aiplusall_kb_selected_tenant_name')
     }
   }
 
@@ -135,15 +135,15 @@ export const useAuthStore = defineStore('auth', () => {
     selectedTenantName.value = null
     allTenants.value = []
 
-    // 清空localStorage
-    localStorage.removeItem('weknora_user')
-    localStorage.removeItem('weknora_tenant')
-    localStorage.removeItem('weknora_token')
-    localStorage.removeItem('weknora_refresh_token')
-    localStorage.removeItem('weknora_knowledge_bases')
-    localStorage.removeItem('weknora_current_kb')
-    localStorage.removeItem('weknora_selected_tenant_id')
-    localStorage.removeItem('weknora_selected_tenant_name')
+    // 清空localStorage - 使用统一的前缀
+    localStorage.removeItem('aiplusall_kb_user')
+    localStorage.removeItem('aiplusall_kb_tenant')
+    localStorage.removeItem('aiplusall_kb_token')
+    localStorage.removeItem('aiplusall_kb_refresh_token')
+    localStorage.removeItem('aiplusall_kb_knowledge_bases')
+    localStorage.removeItem('aiplusall_kb_current_kb')
+    localStorage.removeItem('aiplusall_kb_selected_tenant_id')
+    localStorage.removeItem('aiplusall_kb_selected_tenant_name')
 
     // 重置菜单
     const menuStore = useMenuStore()
@@ -151,15 +151,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const initFromStorage = () => {
-    // 从localStorage恢复状态
-    const storedUser = localStorage.getItem('weknora_user')
-    const storedTenant = localStorage.getItem('weknora_tenant')
-    const storedToken = localStorage.getItem('weknora_token')
-    const storedRefreshToken = localStorage.getItem('weknora_refresh_token')
-    const storedKnowledgeBases = localStorage.getItem('weknora_knowledge_bases')
-    const storedCurrentKb = localStorage.getItem('weknora_current_kb')
-    const storedSelectedTenantId = localStorage.getItem('weknora_selected_tenant_id')
-    const storedSelectedTenantName = localStorage.getItem('weknora_selected_tenant_name')
+    // 从localStorage恢复状态 - 使用统一的前缀
+    const storedUser = localStorage.getItem('aiplusall_kb_user')
+    const storedTenant = localStorage.getItem('aiplusall_kb_tenant')
+    const storedToken = localStorage.getItem('aiplusall_kb_token')
+    const storedRefreshToken = localStorage.getItem('aiplusall_kb_refresh_token')
+    const storedKnowledgeBases = localStorage.getItem('aiplusall_kb_knowledge_bases')
+    const storedCurrentKb = localStorage.getItem('aiplusall_kb_current_kb')
+    const storedSelectedTenantId = localStorage.getItem('aiplusall_kb_selected_tenant_id')
+    const storedSelectedTenantName = localStorage.getItem('aiplusall_kb_selected_tenant_name')
 
     if (storedUser) {
       try {

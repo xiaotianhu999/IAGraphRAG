@@ -3,7 +3,7 @@ services:
   # 只启动依赖的基础设施服务
   postgres:
     image: paradedb/paradedb:v0.18.9-pg17
-    container_name: WeKnora-postgres-dev
+    container_name: aiplusall-kb-postgres-dev
     ports:
       - "${DB_PORT:-5432}:5432"
     environment:
@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres-data-dev:/var/lib/postgresql/data
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
@@ -25,7 +25,7 @@ services:
 
   redis:
     image: redis:7.0-alpine
-    container_name: WeKnora-redis-dev
+    container_name: aiplusall-kb-redis-dev
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -33,11 +33,11 @@ services:
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     restart: always
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
 
   minio:
     image: minio/minio:latest
-    container_name: WeKnora-minio-dev
+    container_name: aiplusall-kb-minio-dev
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -53,21 +53,21 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
     profiles:
       - minio
       - full
 
   qdrant:
     image: qdrant/qdrant:v1.16.2
-    container_name: WeKnora-qdrant-dev
+    container_name: aiplusall-kb-qdrant-dev
     ports:
       - "${QDRANT_REST_PORT:-6333}:6333"
       - "${QDRANT_PORT:-6334}:6334"
     volumes:
       - qdrant_data_dev:/qdrant/storage
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
     restart: unless-stopped
     profiles:
       - qdrant
@@ -75,7 +75,7 @@ services:
 
   neo4j:
     image: neo4j:latest
-    container_name: WeKnora-neo4j-dev
+    container_name: aiplusall-kb-neo4j-dev
     volumes:
       - neo4j-data-dev:/data
     environment:
@@ -89,14 +89,14 @@ services:
       - "7687:7687"
     restart: always
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
     profiles:
       - neo4j
       - full
 
   docreader:
-    image: wechatopenai/weknora-docreader:latest
-    container_name: WeKnora-docreader-dev
+    image: aiplusall/aiplusall-kb-docreader:latest
+    container_name: aiplusall-kb-docreader-dev
     ports:
       - "${DOCREADER_PORT:-50051}:50051"
     environment:
@@ -125,14 +125,14 @@ services:
       retries: 3
       start_period: 60s
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   jaeger:
     image: jaegertracing/all-in-one:latest
-    container_name: WeKnora-jaeger-dev
+    container_name: aiplusall-kb-jaeger-dev
     ports:
       - "6831:6831/udp"
       - "6832:6832/udp"
@@ -149,14 +149,14 @@ services:
     volumes:
       - jaeger_data_dev:/var/lib/jaeger
     networks:
-      - WeKnora-network-dev
+      - aiplusall-kb-network-dev
     restart: unless-stopped
     profiles:
       - jaeger
       - full
 
 networks:
-  WeKnora-network-dev:
+  aiplusall-kb-network-dev:
     driver: bridge
 
 volumes:
